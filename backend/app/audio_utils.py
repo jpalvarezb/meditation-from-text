@@ -2,6 +2,7 @@ import os
 import random
 from pydub import AudioSegment
 from params import CHIMES_DIR
+from config.chime_variants import BAR_CHIME_VARIANTS
 from pydub.effects import low_pass_filter, normalize
 
 
