@@ -7,7 +7,7 @@ __pycache__/
 *.so
 
 # Miscelleanous
-notebooks/
+backend/notebooks/
 .DS_Store (macOS)
 
 # Distribution / packaging
@@ -171,6 +171,13 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Ignore audio assets
+backend/audio/soundscapes/*
+backend/audio/tones/*
+backend/audio/chimes/*
+backend/audio/tts/*
+backend/audio/output/*
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
