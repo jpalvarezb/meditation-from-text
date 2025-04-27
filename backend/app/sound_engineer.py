@@ -22,6 +22,14 @@ def sound_engineer_pipeline(
     emotion_summary: dict,
     output_filename: str = "final_mix.wav",
 ) -> str:
+    """Main pipeline for creating a meditation soundscape.
+    Args:
+        tts_path (str): Path to the TTS audio file.
+        alignment_json_path (str): Path to the alignment JSON file.
+        emotion_summary (dict): Dictionary containing emotion scores.
+        output_filename (str): Name of the output file.
+    Returns:
+        str: Path to the final mixed audio file."""
     # Choose assets based on emotion
     chosen = choose_assets(emotion_summary)
 
