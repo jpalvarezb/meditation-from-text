@@ -10,7 +10,7 @@ def text_to_ssml(script: str) -> str:
     Converts a meditation script to SSML with:
     - <s> for sentence separation
     - <break time="2s"/> for calming trigger words
-    - <prosody rate="05%"> to slow down speech
+    - <prosody rate="80%"> to slow down speech
     - Proper XML escaping
     """
     processed = ["<speak>", '<prosody rate="80%">']
