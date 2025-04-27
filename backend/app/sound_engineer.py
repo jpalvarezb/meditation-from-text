@@ -2,6 +2,7 @@ import os
 import json
 from pydub import AudioSegment
 from decision_maker import choose_assets
+from config.trigger_words import TRIGGER_WORDS
 from audio_utils import (
     soften_voice,
     build_seamless_loop,
