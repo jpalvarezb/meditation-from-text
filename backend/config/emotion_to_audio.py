@@ -1,0 +1,60 @@
+EMOTION_TO_AUDIO = {
+    "joy": {
+        "ambient": "joy_meadow_stream.wav",
+        "ambient_volume_dBFS": -32.0,
+        "tone": "528Hz_60s.wav",
+        "tone_volume_dBFS": -36.0,
+        "start_chime": "start_chime_gong.wav",
+        "end_chime": "end_chime_singing_bowl_1.wav",
+    },
+    "sadness": {
+        "ambient": "sadness_forest_wind.wav",
+        "ambient_volume_dBFS": -30.0,
+        "tone": "396Hz_60s.wav",
+        "tone_volume_dBFS": -34.0,
+        "start_chime": "start_chime_paiste_gong.wav",
+        "end_chime": "end_chime_singing_bowl_2.wav",
+    },
+    "fear": {
+        "ambient": "fear_rain_thunder.wav",
+        "ambient_volume_dBFS": -29.0,
+        "tone": "417Hz_60s.wav",
+        "tone_volume_dBFS": -35.0,
+        "start_chime": "start_chime_paiste_gong.wav",
+        "end_chime": "end_chime_church_bell.wav",
+    },
+    "anger": {
+        "ambient": "anger_muffled_wind.wav",
+        "ambient_volume_dBFS": -31.0,
+        "tone": "639Hz_60s.wav",
+        "tone_volume_dBFS": -35.0,
+        "start_chime": "start_chime_gong.wav",
+        "end_chime": "end_chime_church_bell.wav",
+    },
+    "disgust": {
+        "ambient": "disgust_ocean_swell.wav",
+        "ambient_volume_dBFS": -32.0,
+        "tone": "741Hz_60s.wav",
+        "tone_volume_dBFS": -36.0,
+        "start_chime": "start_chime_gong.wav",
+        "end_chime": "end_chime_singing_bowl_2.wav",
+    },
+    "surprise": {
+        "ambient": "surprise_open_breeze.wav",
+        "ambient_volume_dBFS": -31.0,
+        "tone": "852Hz_60s.wav",
+        "tone_volume_dBFS": -36.0,
+        "start_chime": "start_chime_gong.wav",
+        "end_chime": "end_chime_singing_bowl_1.wav",
+    },
+    "neutral": {
+        "ambient": "neutral_white_noise.wav",
+        "ambient_volume_dBFS": -32.0,
+        "tone": "432Hz_60s.wav",
+        "tone_volume_dBFS": -35.0,
+        "start_chime": "start_chime_paiste_gong.wav",
+        "end_chime": "end_chime_singing_bowl_1.wav",
+    },
+}
+# The above dictionary maps emotions to their corresponding audio files and volume levels.
+# Each emotion has an ambient sound, a tone, and two chimes (start and end).
