@@ -85,7 +85,6 @@ def sound_engineer_pipeline(
     # Build full TTS: softened voice + silence offset
     tts = AudioSegment.silent(duration=tts_start_offset) + softened
     tts_duration = len(tts)
-    print(f"TTS duration: {tts_duration / 1000:.2f}s")
 
     # End chime
     end_chime = AudioSegment.from_file(end_chime_path)
@@ -128,8 +127,5 @@ def sound_engineer_pipeline(
     # Export
     output_path = os.path.join(OUTPUT_DIR, output_filename)
     final_mix.export(output_path, format="wav")
-
-    print(f"Final mix saved to: {output_path}")
-    print(f"Final duration: {len(final_mix) / 1000:.2f} seconds")
 
     return output_path
