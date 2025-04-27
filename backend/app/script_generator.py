@@ -140,7 +140,7 @@ async def generate_meditation_script(
         response = await chat.send_message(feedback)
         script = response.text
 
-    with open(os.path.join(TTS_DIR, "script.txt"), "w") as f:
-        f.write(script)
+    with open(os.path.join(TTS_DIR, "script.txt"), "w", encoding="utf-8") as f:
+        f.write(script.strip())
 
     return script

@@ -1,0 +1,32 @@
+CALM_TRIGGERS = {
+    "breath",
+    "breathe",
+    "relax",
+    "pause",
+    "stillness",
+    "calm",
+    "settle",
+    "release",
+    "soften",
+    "acknowledge",
+    "accept",
+    "reflect",
+    "present",
+    "let go",
+    "feel",
+    "see",
+    "ground",
+    "hear",
+    "sense",
+    "imagine",
+    "allow",
+    "embrace",
+    "welcome",
+    "trust",
+    "surrender",
+    "open",
+    "expand",
+}
+
+# These trigger words are used in post-processing the script to SSML.
+# They are used to identify where to add pauses in the TTS.
