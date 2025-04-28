@@ -1,7 +1,7 @@
 import os
 import random
 from pydub import AudioSegment
-from params import CHIMES_DIR
+from config.params import CHIMES_DIR
 from config.chime_variants import BAR_CHIME_VARIANTS
 from pydub.effects import low_pass_filter, normalize
 
@@ -137,27 +137,32 @@ def build_seamless_loop(
 
 
 def build_outro_segment(
-    end_chime: AudioSegment, ambient_loop: AudioSegment, fade_out_duration: int = 4000
+    end_chime: AudioSegment,
+    background: AudioSegment,
+    fade_out_duration: int = 8000,  # fade over 8 seconds
 ) -> AudioSegment:
     """
-    Build the outro segment:
-    - 2s buffer after TTS
-    - End chime begins after buffer
-    - Ambient continues underneath fading out during chime
-    - No cutoff of chime
+    Build the outro by fading out the tail of the actual background under the chime:
+      1) Take the last `fade_out_duration` ms of `background`
+      2) Fade that slice out
+      3) Overlay it under the first `fade_out_duration` ms of the chime
+      4) Append the rest of the chime so it rings alone
     """
-    buffer_before_chime = AudioSegment.silent(duration=2000)  # 2 seconds silence
 
-    # Ambient tail underneath
-    ambient_tail = ambient_loop[:fade_out_duration].fade_out(fade_out_duration)
+    # 1) Ensure background is long enough
+    if len(background) < fade_out_duration:
+        repeats = (fade_out_duration // len(background)) + 1
+        background = background * repeats
 
-    # Create trailing segment: 2s silence + chime
-    trailing = buffer_before_chime + end_chime
+    # 2) Fade the last part of ambient
+    ambient_tail = background[-fade_out_duration:].fade_out(fade_out_duration)
 
-    # Overlay ambient tail at the start (it fades out underneath)
-    trailing = trailing.overlay(ambient_tail, position=0)
+    # 3) Split chime into head (first fade_out_duration ms) and tail
+    chime_head = end_chime[:fade_out_duration]
+    chime_tail = end_chime[fade_out_duration:]
 
-    # Add some final padding to guarantee full chime play
-    trailing += AudioSegment.silent(duration=3000)  # 3s safe padding
+    # 4) Overlay ambient fade-out under chime head
+    head_with_bg = chime_head.overlay(ambient_tail)
 
-    return trailing
+    # 5) Combine faded head + pure ringing tail
+    return head_with_bg + chime_tail

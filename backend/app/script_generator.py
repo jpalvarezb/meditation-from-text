@@ -1,6 +1,7 @@
 import os
+from datetime import datetime
 from google import genai
-from params import TTS_DIR
+from config.params import TTS_DIR
 from config.meditation_types import MEDITATION_TYPE_STYLES
 
 
@@ -103,19 +104,11 @@ async def generate_meditation_script(
     max_loops: int = 10,
 ) -> str:
     """
-    Asynchronously generates a meditation script using the Gemini API,
-    and iteratively refines it until it matches the desired duration (via word count).
-
-    Parameters:
-        prompt (str): The initial meditation prompt.
-        time (int): Desired duration in minutes.
-        gemini_key (str): Your Gemini API key.
-        max_loops (int): Max attempts before failing out.
-
-    Returns:
-        str: Final meditation script matching duration.
+    Asynchronously generates a meditation script using the Gemini API.
+    Saves final script as a timestamped .txt file.
+    Returns the raw script string.
     """
-    expected_length = time * 135  # ~135 words per minute
+    expected_length = time * 135
     client = genai.Client(api_key=gemini_key)
     chat = client.aio.chats.create(model="models/gemini-2.0-flash")
 
@@ -127,20 +120,21 @@ async def generate_meditation_script(
         loops += 1
         if loops >= max_loops:
             raise RuntimeError(
-                f"Exceeded max refinement attempts ({max_loops}) without reaching word count goal "
-                f"for {time}-minute meditation. Last output was {len(script.split())} words."
+                f"Exceeded max refinement attempts ({max_loops}) without matching expected length."
             )
-
         feedback = (
-            f"The script is currently {len(script.split())} words long, which doesn't match a "
-            f"{time}-minute meditation. Please revise it to approximately {expected_length} words, "
-            "while keeping the same emotional tone, pacing, and structure."
+            f"The script is currently {len(script.split())} words long. "
+            f"Please revise it to approximately {expected_length} words."
         )
-
         response = await chat.send_message(feedback)
         script = response.text
 
-    with open(os.path.join(TTS_DIR, "script.txt"), "w", encoding="utf-8") as f:
-        f.write(script.strip())
+    # Save the final script
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    script_filename = f"script_{timestamp}.txt"
+    script_output_path = os.path.join(TTS_DIR, script_filename)
 
-    return script
+    with open(script_output_path, "w") as f:
+        f.write(script)
+
+    return script_output_path  # <<< return path instead of just script
