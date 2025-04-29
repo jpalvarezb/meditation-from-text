@@ -1,5 +1,6 @@
 import os
 import asyncio
+import logging
 from google import genai
 from datetime import datetime
 from config.params import TTS_DIR
@@ -113,12 +114,18 @@ async def generate_meditation_script(
     """
     expected_length = time * 135
 
-    models = ["models/gemini-2.0-flash", "models/gemini-1.5-flash"]
+    models = [
+        "models/gemini-2.0-flash",
+        "models/gemini-1.5-pro",
+        "models/gemini-1.0-pro",
+    ]
 
     for attempt in range(max_total_retries):
         for model_name in models:
             try:
-                print(f"🔹 Attempt {attempt + 1}: Trying model {model_name}")
+                logging.info(
+                    f"Attempt {attempt + 1}/{max_total_retries}: Trying model {model_name}"
+                )
                 chat = client.aio.chats.create(model=model_name)
                 response = await chat.send_message(prompt)
                 script = response.text
@@ -126,38 +133,36 @@ async def generate_meditation_script(
                 break  # successful, break model loop
             except ServerError as e:
                 if "503" in str(e):
-                    print(
-                        f"⚡ Model {model_name} overloaded (503). Trying next model..."
+                    logging.warning(
+                        f"Model {model_name} overloaded (503). Trying next model..."
                     )
                     continue
                 else:
                     raise e
             except ClientError as e:
-                import ipdb
-
-                ipdb.set_trace()
-                if e.status_code == 429:
+                if e.code == 429:
                     retry_delay = 30  # fallback default
                     try:
-                        details = e.args[0]
-                        if "retryDelay" in details:
-                            import re
+                        details = e.details["error"]["details"][0]
+                        if isinstance(details, dict):
+                            retry_str = details.get("retryDelay", "30s")
+                            retry_delay = int(retry_str.replace("s", ""))
+                            if retry_delay == 0:
+                                retry_delay = 30
+                    except Exception as parse_error:
+                        logging.warning(f"Failed to parse retryDelay: {parse_error}")
 
-                            m = re.search(r"'retryDelay': '(\d+)s'", details)
-                            if m:
-                                retry_delay = int(m.group(1))
-                    except Exception:
-                        pass
-
-                    print(
-                        f"⚡ Rate limit hit (429). Waiting {retry_delay}s before retry..."
+                    logging.warning(
+                        f"Rate limit hit (429). Sleeping {retry_delay}s before retry..."
                     )
                     await asyncio.sleep(retry_delay)
                     continue
                 else:
                     raise e
         else:
-            print("🔄 All models overloaded. Retrying full generation after backoff...")
+            logging.info(
+                "All models overloaded. Retrying full generation after backoff..."
+            )
             await asyncio.sleep(2**attempt)
             continue
 
@@ -166,7 +171,9 @@ async def generate_meditation_script(
         while not length_threshold(time, len(script.split())):
             loops += 1
             if loops >= max_loops:
-                print("⚡ Max refinement loops reached. Restarting full generation...")
+                logging.info(
+                    f"Max refinement loops reached {loops}/{max_loops}. Restarting full generation..."
+                )
                 await asyncio.sleep(2**attempt)
                 break
 
@@ -181,18 +188,39 @@ async def generate_meditation_script(
                 script = response.text
             except ServerError as e:
                 if "503" in str(e):
-                    print(
-                        f"⚡ Model {model_used} overloaded during feedback. Restarting full generation..."
+                    logging.warning(
+                        f"Model {model_used} overloaded during feedback. Restarting full generation..."
                     )
                     await asyncio.sleep(2**attempt)
                     break
+                else:
+                    raise e
+            except ClientError as e:
+                if e.code == 429:
+                    retry_delay = 30  # fallback default
+                    try:
+                        details = e.details["error"]["details"][2]
+                        if isinstance(details, dict):
+                            retry_str = details.get("retryDelay", "30s")
+                            retry_delay = int(retry_str.replace("s", ""))
+                    except Exception as parse_error:
+                        logging.warning(f"Failed to parse retryDelay: {parse_error}")
+
+                    logging.warning(
+                        f"Rifenement loop {loops}/{max_loops} failed: Rate limit hit (429). Sleeping {retry_delay}s before retry..."
+                    )
+                    await asyncio.sleep(retry_delay)
+                    continue
                 else:
                     raise e
         else:
             break  # ✅ Refinement successful
 
     else:
-        raise RuntimeError("❌ Exceeded maximum retries. Meditation generation failed.")
+        logging.error(
+            f"Exceeded maximum retries {attempt}/{max_total_retries}. Meditation generation failed."
+        )
+        raise RuntimeError
 
     # Save script
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -202,7 +230,7 @@ async def generate_meditation_script(
     with open(script_output_path, "w") as f:
         f.write(script)
 
-    print(
-        f"✅ Meditation script generated successfully after {attempt + 1} attempt(s) using {model_used}"
+    logging.info(
+        f"Meditation script generated successfully after {attempt + 1} attempt(s) using {model_used}"
     )
     return script_output_path

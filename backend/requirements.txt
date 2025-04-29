@@ -2,4 +2,5 @@ fastapi
 uvicorn
 openai
 python-dotenv
-gtts
+boto3
+google-genai
