@@ -138,31 +138,20 @@ def build_seamless_loop(
 
 def build_outro_segment(
     end_chime: AudioSegment,
-    background: AudioSegment,
-    fade_out_duration: int = 8000,  # fade over 8 seconds
+    chime_fade_out_duration: int = 4000,
 ) -> AudioSegment:
     """
-    Build the outro by fading out the tail of the actual background under the chime:
-      1) Take the last `fade_out_duration` ms of `background`
-      2) Fade that slice out
-      3) Overlay it under the first `fade_out_duration` ms of the chime
-      4) Append the rest of the chime so it rings alone
+    Process the end chime: #TODO (optionally) apply a curved fade-out to the end of the chime.
     """
 
-    # 1) Ensure background is long enough
-    if len(background) < fade_out_duration:
-        repeats = (fade_out_duration // len(background)) + 1
-        background = background * repeats
+    # 1) Apply fade-out to the tail of the chime
+    if chime_fade_out_duration > 0 and len(end_chime) > chime_fade_out_duration:
+        chime_head = end_chime[:-chime_fade_out_duration]
+        chime_tail = end_chime[-chime_fade_out_duration:].fade_out(
+            chime_fade_out_duration
+        )
+        final_chime = chime_head + chime_tail
+    else:
+        final_chime = end_chime
 
-    # 2) Fade the last part of ambient
-    ambient_tail = background[-fade_out_duration:].fade_out(fade_out_duration)
-
-    # 3) Split chime into head (first fade_out_duration ms) and tail
-    chime_head = end_chime[:fade_out_duration]
-    chime_tail = end_chime[fade_out_duration:]
-
-    # 4) Overlay ambient fade-out under chime head
-    head_with_bg = chime_head.overlay(ambient_tail)
-
-    # 5) Combine faded head + pure ringing tail
-    return head_with_bg + chime_tail
+    return final_chime

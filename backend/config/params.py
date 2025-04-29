@@ -1,11 +1,12 @@
 import os
 
+# Local Directories
+AUDIO_ROOT = os.path.join(os.path.expanduser("~"), "audio-assets")
+SOUNDSCAPES_DIR = os.path.join(AUDIO_ROOT, "soundscapes")
+CHIMES_DIR = os.path.join(AUDIO_ROOT, "chimes")
+TONES_DIR = os.path.join(AUDIO_ROOT, "tones")
+TTS_DIR = os.path.join(AUDIO_ROOT, "tts")
+OUTPUT_DIR = os.path.join(AUDIO_ROOT, "output")
+
 # API Keys
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
-# Local Directories
-SOUNDSCAPES_DIR = os.getenv("SOUNDSCAPES_DIR", "audio/soundscapes/")
-CHIMES_DIR = os.getenv("CHIMES_DIR", "audio/chimes/")
-TONES_DIR = os.getenv("TONES_DIR", "audio/tones/")
-TTS_DIR = os.getenv("TTS_DIR", "audio/tts/")
-OUTPUT_DIR = os.getenv("OUTPUT_DIR", "audio/output/")

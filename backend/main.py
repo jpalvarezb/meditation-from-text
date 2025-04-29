@@ -3,7 +3,6 @@ from app.emotion_scoring import emotion_classification
 from app.script_generator import generate_prompt, generate_meditation_script
 from app.tts_generator import generate_tts, align_audio_text
 from app.sound_engineer import sound_engineer_pipeline
-from config.params import GEMINI_API_KEY
 
 
 async def main():
@@ -38,16 +37,11 @@ async def main():
     script_path = await generate_meditation_script(
         prompt=prompt,
         time=duration_minutes,
-        gemini_key=GEMINI_API_KEY,
     )
 
     # --- Step 4: Load the saved script ---
     with open(script_path, "r") as f:
         script_text = f.read()
-
-    import ipdb
-
-    ipdb.set_trace()
 
     # --- Step 5: Generate TTS from script ---
     print("🔊 Generating TTS audio...")

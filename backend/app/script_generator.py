@@ -1,8 +1,12 @@
 import os
-from datetime import datetime
+import asyncio
 from google import genai
+from datetime import datetime
 from config.params import TTS_DIR
+from google.genai.errors import ServerError, ClientError
 from config.meditation_types import MEDITATION_TYPE_STYLES
+
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 
 def generate_prompt(
@@ -88,9 +92,6 @@ def generate_prompt(
 
 
 def length_threshold(time: int, word_count: int, tolerance: float = 0.10) -> bool:
-    """
-    Returns True if word_count is within ±tolerance of expected words for the given time.
-    """
     expected = time * 135
     lower = expected * (1 - tolerance)
     upper = expected * (1 + tolerance)
@@ -100,36 +101,100 @@ def length_threshold(time: int, word_count: int, tolerance: float = 0.10) -> boo
 async def generate_meditation_script(
     prompt: str,
     time: int,
-    gemini_key: str,
+    client=client,  # <-- CHANGE: pass the Gemini client directly
     max_loops: int = 10,
+    max_total_retries: int = 3,
 ) -> str:
     """
-    Asynchronously generates a meditation script using the Gemini API.
-    Saves final script as a timestamped .txt file.
-    Returns the raw script string.
+    Fully robust meditation script generator with:
+    - Model fallback if overloaded
+    - Retry full generation if feedback refinement fails
+    - Exponential backoff between retries
     """
     expected_length = time * 135
-    client = genai.Client(api_key=gemini_key)
-    chat = client.aio.chats.create(model="models/gemini-2.0-flash")
 
-    response = await chat.send_message(prompt)
-    script = response.text
-    loops = 0
+    models = ["models/gemini-2.0-flash", "models/gemini-1.5-flash"]
 
-    while not length_threshold(time, len(script.split())):
-        loops += 1
-        if loops >= max_loops:
-            raise RuntimeError(
-                f"Exceeded max refinement attempts ({max_loops}) without matching expected length."
+    for attempt in range(max_total_retries):
+        for model_name in models:
+            try:
+                print(f"🔹 Attempt {attempt + 1}: Trying model {model_name}")
+                chat = client.aio.chats.create(model=model_name)
+                response = await chat.send_message(prompt)
+                script = response.text
+                model_used = model_name
+                break  # successful, break model loop
+            except ServerError as e:
+                if "503" in str(e):
+                    print(
+                        f"⚡ Model {model_name} overloaded (503). Trying next model..."
+                    )
+                    continue
+                else:
+                    raise e
+            except ClientError as e:
+                import ipdb
+
+                ipdb.set_trace()
+                if e.status_code == 429:
+                    retry_delay = 30  # fallback default
+                    try:
+                        details = e.args[0]
+                        if "retryDelay" in details:
+                            import re
+
+                            m = re.search(r"'retryDelay': '(\d+)s'", details)
+                            if m:
+                                retry_delay = int(m.group(1))
+                    except Exception:
+                        pass
+
+                    print(
+                        f"⚡ Rate limit hit (429). Waiting {retry_delay}s before retry..."
+                    )
+                    await asyncio.sleep(retry_delay)
+                    continue
+                else:
+                    raise e
+        else:
+            print("🔄 All models overloaded. Retrying full generation after backoff...")
+            await asyncio.sleep(2**attempt)
+            continue
+
+        # ✅ Initial generation successful, refine script
+        loops = 0
+        while not length_threshold(time, len(script.split())):
+            loops += 1
+            if loops >= max_loops:
+                print("⚡ Max refinement loops reached. Restarting full generation...")
+                await asyncio.sleep(2**attempt)
+                break
+
+            feedback = (
+                f"The script is currently {len(script.split())} words long. "
+                f"Please revise it to approximately {expected_length} words."
             )
-        feedback = (
-            f"The script is currently {len(script.split())} words long. "
-            f"Please revise it to approximately {expected_length} words."
-        )
-        response = await chat.send_message(feedback)
-        script = response.text
 
-    # Save the final script
+            try:
+                chat = client.aio.chats.create(model=model_used)
+                response = await chat.send_message(feedback)
+                script = response.text
+            except ServerError as e:
+                if "503" in str(e):
+                    print(
+                        f"⚡ Model {model_used} overloaded during feedback. Restarting full generation..."
+                    )
+                    await asyncio.sleep(2**attempt)
+                    break
+                else:
+                    raise e
+        else:
+            break  # ✅ Refinement successful
+
+    else:
+        raise RuntimeError("❌ Exceeded maximum retries. Meditation generation failed.")
+
+    # Save script
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     script_filename = f"script_{timestamp}.txt"
     script_output_path = os.path.join(TTS_DIR, script_filename)
@@ -137,4 +202,7 @@ async def generate_meditation_script(
     with open(script_output_path, "w") as f:
         f.write(script)
 
-    return script_output_path  # <<< return path instead of just script
+    print(
+        f"✅ Meditation script generated successfully after {attempt + 1} attempt(s) using {model_used}"
+    )
+    return script_output_path
