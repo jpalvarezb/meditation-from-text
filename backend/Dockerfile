@@ -1,26 +1,41 @@
-# Use slim Python base
-FROM python:3.10-slim
+# Use pinned, stable base with fewer vulnerabilities
+FROM python:3.11.9-slim-bullseye
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies (add ffmpeg)
-RUN apt-get update && \
-    apt-get install -y ffmpeg && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Avoid interactive prompts during build
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Copy and install Python requirements
+# Install system dependencies (minimal and required for aeneas + ffmpeg)
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    espeak \
+    libespeak-dev \
+    libmagic-dev \
+    build-essential \
+    git \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
+# Pre-install compatible versions for aeneas build
+RUN pip install --no-cache-dir "numpy<2" setuptools wheel
+
+# Install aeneas separately (build isolation disabled)
+RUN pip install --no-cache-dir --no-build-isolation aeneas==1.7.3.0
+
+# Copy requirements and install remaining packages
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy your app code
+# Copy your actual application code
 COPY app ./app
 COPY api ./api
 COPY config ./config
+COPY assets ./assets
 
-# Optional: secrets mount path (won't be used at build time)
+# Create secrets dir (used at runtime, not build time)
 RUN mkdir -p /run/secrets
 
-# Entrypoint
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Default command
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]

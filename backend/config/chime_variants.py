@@ -1,9 +1,9 @@
 BAR_CHIME_VARIANTS = [
-    "bar_chime_1.wav",
-    "bar_chime_2.wav",
-    "bar_chime_3.wav",
-    "bar_chime_4.wav",
-    "bar_chime_5.wav",
+    "inter_chime_1.wav",
+    "inter_chime_2.wav",
+    "inter_chime_3.wav",
+    "inter_chime_4.wav",
+    "inter_chime_5.wav",
 ]
 
 # Different chime variants that rotate during the meditation session.

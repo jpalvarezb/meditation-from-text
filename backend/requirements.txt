@@ -1,6 +1,11 @@
+# numpy == 2.2.4
 fastapi
 uvicorn
 openai
 python-dotenv
 boto3
 google-genai
+# aeneas==1.7.3.0
+torch == 2.6.0
+transformers == 4.50.3
+pydub==0.25.1

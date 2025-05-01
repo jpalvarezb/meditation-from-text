@@ -1,4 +1,3 @@
-import traceback
 from app.logger import logger
 from api.engine import meditation_engine
 from fastapi import FastAPI, HTTPException
