@@ -1,13 +1,13 @@
 import os
 import asyncio
-import logging
 from google import genai
 from datetime import datetime
-from config.params import TTS_DIR
+from app.logger import logger
+from config.params import GEMINI_API_KEY, TTS_DIR
 from google.genai.errors import ServerError, ClientError
 from config.meditation_types import MEDITATION_TYPE_STYLES
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 
 def generate_prompt(
@@ -56,7 +56,7 @@ def generate_prompt(
     Refer to this meditation guidance for stylistic inspiration:
     {meditation_guidance}
 
-    When writing the meditation script:
+    When writing the guided meditation script:
     - Explicitly reference and validate the user's personal experiences and emotions (e.g., anxiety from a work presentation, regret after a conflict). Clearly acknowledge these events before gently abstracting them.
     - Create 1-3 vivid, meaningful metaphors or symbolic scenarios closely linked to their experience (e.g., anxiety as "standing exposed in a silent storm").
     - Ensure metaphors organically emerge from the user's described experiences rather than feeling forced or generic.
@@ -64,6 +64,7 @@ def generate_prompt(
     - Favor concise, rhythmic sentences suitable for spoken delivery. Vary sentence length occasionally for a natural, engaging flow.
     - Avoid repetitive sentence structures, clinical language, hedging phrases (like "if you'd like" or "if that feels comfortable"), or overly abstract affirmations. Instead, employ gentle yet confident invitations (e.g., "imagine," "notice," "perhaps").
     - Do **not** use ellipses (`...`), emdashes (`—`) since they often cause unnatural stutters in voice playback. Only use line breaks or commas (`,`) for soft pacing instead.
+    - This meditation will be used in a real mindfulness app. The listener is expecting a direct, emotionally attuned meditation — not fiction, dialogue, or theatrical storytelling.
     - The final output should feel completely personalized to the user.
 
     Your task:
@@ -82,11 +83,32 @@ def generate_prompt(
         """
     else:
         prompt += f"""
-        Write a complete meditation script (~{time} minutes) using your chosen metaphors.
+        Your task is to write a personalized **guided meditation** script (approximately {time} minutes, ~{time * 135} words). The tone should remain calm, poetic, and emotionally grounded.
 
-        Maintain a calm, poetic voice consistent with the {spiritual_path} tradition.
+        ⚠️ Do not write a story, dialogue, play, screenplay, or film scene.
 
-        Return only the meditation script, without any titles, labels, explanations, or formatting instructions. Your output will be used directly for text-to-speech playback.
+        The user will hear this script via a voice narrator — your language should be reflective, direct, and suited for TTS playback.
+
+        ✳️ Structure:
+        - Begin with a short grounding or breath cue.
+        - Move into emotionally resonant imagery or metaphor derived from the journal entry and emotion summary.
+        - Guide the listener gently into awareness, reflection, or visualization.
+        - Close with a clear, peaceful re-entry to the present.
+
+        ✳️ Constraints:
+        - No scene headings, character names, or dramatized dialogue.
+        - Avoid formatting marks (titles, asterisks, headings).
+        - Avoid phrases like "Here's your script" or "Scene start", "Here's your meditation" or "Okay, here's a revised version".
+        - Do not explain your choices. Output only the **spoken meditation script**.
+        - Your task is to write a direct **guided meditation** script for a real mindfulness app. The script should be approximately {time} minutes long (~{time * 135} words).
+        - Do **not** explain what you're doing.
+        - Do **not** respond as if editing or summarizing anything. You are the voice of the meditation guide.
+
+        ✅ Only output the meditation script itself, written in second-person, meant to be read aloud with a calming tone.
+
+        Begin immediately with the meditation.
+
+        End your meditation script naturally, as a meditative guide would.
         """
 
     return prompt.strip()
@@ -116,14 +138,16 @@ async def generate_meditation_script(
 
     models = [
         "models/gemini-2.0-flash",
-        "models/gemini-1.5-pro",
-        "models/gemini-1.0-pro",
+        "models/gemini-2.0-flash-001",
+        "models/gemini-2.0-flash-002",
     ]
+
+    model_used = None  # track the currently used model
 
     for attempt in range(max_total_retries):
         for model_name in models:
             try:
-                logging.info(
+                logger.info(
                     f"Attempt {attempt + 1}/{max_total_retries}: Trying model {model_name}"
                 )
                 chat = client.aio.chats.create(model=model_name)
@@ -133,66 +157,10 @@ async def generate_meditation_script(
                 break  # successful, break model loop
             except ServerError as e:
                 if "503" in str(e):
-                    logging.warning(
+                    logger.warning(
                         f"Model {model_name} overloaded (503). Trying next model..."
                     )
                     continue
-                else:
-                    raise e
-            except ClientError as e:
-                if e.code == 429:
-                    retry_delay = 30  # fallback default
-                    try:
-                        details = e.details["error"]["details"][0]
-                        if isinstance(details, dict):
-                            retry_str = details.get("retryDelay", "30s")
-                            retry_delay = int(retry_str.replace("s", ""))
-                            if retry_delay == 0:
-                                retry_delay = 30
-                    except Exception as parse_error:
-                        logging.warning(f"Failed to parse retryDelay: {parse_error}")
-
-                    logging.warning(
-                        f"Rate limit hit (429). Sleeping {retry_delay}s before retry..."
-                    )
-                    await asyncio.sleep(retry_delay)
-                    continue
-                else:
-                    raise e
-        else:
-            logging.info(
-                "All models overloaded. Retrying full generation after backoff..."
-            )
-            await asyncio.sleep(2**attempt)
-            continue
-
-        # ✅ Initial generation successful, refine script
-        loops = 0
-        while not length_threshold(time, len(script.split())):
-            loops += 1
-            if loops >= max_loops:
-                logging.info(
-                    f"Max refinement loops reached {loops}/{max_loops}. Restarting full generation..."
-                )
-                await asyncio.sleep(2**attempt)
-                break
-
-            feedback = (
-                f"The script is currently {len(script.split())} words long. "
-                f"Please revise it to approximately {expected_length} words."
-            )
-
-            try:
-                chat = client.aio.chats.create(model=model_used)
-                response = await chat.send_message(feedback)
-                script = response.text
-            except ServerError as e:
-                if "503" in str(e):
-                    logging.warning(
-                        f"Model {model_used} overloaded during feedback. Restarting full generation..."
-                    )
-                    await asyncio.sleep(2**attempt)
-                    break
                 else:
                     raise e
             except ClientError as e:
@@ -203,10 +171,80 @@ async def generate_meditation_script(
                         if isinstance(details, dict):
                             retry_str = details.get("retryDelay", "30s")
                             retry_delay = int(retry_str.replace("s", ""))
+                            if retry_delay == 0:
+                                retry_delay = 30
                     except Exception as parse_error:
-                        logging.warning(f"Failed to parse retryDelay: {parse_error}")
+                        logger.warning(f"Failed to parse retryDelay: {parse_error}")
 
-                    logging.warning(
+                    logger.warning(
+                        f"Rate limit hit (429). Sleeping {retry_delay}s before retry..."
+                    )
+                    await asyncio.sleep(retry_delay)
+                    continue
+                else:
+                    raise e
+        else:
+            logger.info(
+                "All models overloaded. Retrying full generation after backoff..."
+            )
+            await asyncio.sleep(2**attempt)
+            continue
+
+        # ✅ Initial generation successful, refine script
+        loops = 0
+        fallback_models = models[
+            models.index(model_used) :
+        ]  # start from current model down
+        model_index = 0
+
+        while not length_threshold(time, len(script.split())):
+            loops += 1
+            if loops >= max_loops:
+                logger.info(
+                    f"Max refinement loops reached {loops}/{max_loops}. Restarting full generation..."
+                )
+                await asyncio.sleep(2**attempt)
+                break
+
+            feedback = (
+                f"The current meditation script is {len(script.split())} words long. "
+                f"The target length is approximately {expected_length} words (±15). "
+                f"Regenerate the full script to meet this length, keeping the same tone and user context. "
+                f"Output only the meditation script — no headers, explanations, or formatting."
+            )
+
+            try:
+                chat = client.aio.chats.create(model=fallback_models[model_index])
+                response = await chat.send_message(feedback)
+                script = response.text
+            except ServerError as e:
+                if "503" in str(e):
+                    logger.warning(
+                        f"Model {fallback_models[model_index]} overloaded during refinement (503). Trying next fallback model:{fallback_models[model_index + 1]} ..."
+                    )
+                    model_index += 1
+                    if model_index >= len(fallback_models):
+                        logger.warning(
+                            "No more fallback models during refinement. Restarting full generation..."
+                        )
+                        await asyncio.sleep(2**attempt)
+                        break
+                    await asyncio.sleep(2**attempt)
+                    continue
+                else:
+                    raise e
+            except ClientError as e:
+                if e.code == 429:
+                    retry_delay = 30
+                    try:
+                        details = e.details["error"]["details"][2]
+                        if isinstance(details, dict):
+                            retry_str = details.get("retryDelay", "30s")
+                            retry_delay = int(retry_str.replace("s", ""))
+                    except Exception as parse_error:
+                        logger.warning(f"Failed to parse retryDelay: {parse_error}")
+
+                    logger.warning(
                         f"Rifenement loop {loops}/{max_loops} failed: Rate limit hit (429). Sleeping {retry_delay}s before retry..."
                     )
                     await asyncio.sleep(retry_delay)
@@ -217,8 +255,8 @@ async def generate_meditation_script(
             break  # ✅ Refinement successful
 
     else:
-        logging.error(
-            f"Exceeded maximum retries {attempt}/{max_total_retries}. Meditation generation failed."
+        logger.error(
+            f"Exceeded maximum retries {attempt + 1}/{max_total_retries}. Meditation generation failed."
         )
         raise RuntimeError
 
@@ -230,7 +268,7 @@ async def generate_meditation_script(
     with open(script_output_path, "w") as f:
         f.write(script)
 
-    logging.info(
+    logger.info(
         f"Meditation script generated successfully after {attempt + 1} attempt(s) using {model_used}"
     )
     return script_output_path

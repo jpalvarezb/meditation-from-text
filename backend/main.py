@@ -3,24 +3,6 @@ from app.emotion_scoring import emotion_classification
 from app.script_generator import generate_prompt, generate_meditation_script
 from app.tts_generator import generate_tts, align_audio_text
 from app.sound_engineer import sound_engineer_pipeline
-import logging
-import os
-
-# Ensure logs directory exists
-LOGS_DIR = os.path.join(os.path.dirname(__file__), "logs")
-os.makedirs(LOGS_DIR, exist_ok=True)
-
-# Logging configuration
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.StreamHandler(),  # console output
-        logging.FileHandler(
-            os.path.join(LOGS_DIR, "meditation_app.log")
-        ),  # file output
-    ],
-)
 
 
 async def main():

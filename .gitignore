@@ -9,6 +9,7 @@ __pycache__/
 # Miscelleanous
 backend/notebooks/
 .DS_Store (macOS)
+backend/secrets/
 
 # Distribution / packaging
 .Python
