@@ -10,6 +10,7 @@ __pycache__/
 backend/notebooks/
 .DS_Store (macOS)
 backend/secrets/
+backend/assets/
 
 # Distribution / packaging
 .Python
