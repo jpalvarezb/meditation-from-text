@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: minday-backend:dev
     container_name: minday-backend
     ports:
       - "8000:8000"

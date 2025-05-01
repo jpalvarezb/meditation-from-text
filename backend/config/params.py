@@ -1,6 +1,6 @@
 import os
 
-# Production // Development
+## Production // Development
 LOG_LEVEL = "DEBUG"  # "INFO" or "DEBUG"
 
 # Local Directories
@@ -18,7 +18,7 @@ OUTPUT_DIR = os.path.join(AUDIO_ROOT, "output")
 LOGS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs")
 
 
-# Secrets
+# Get Secret function (Docker Compose Architecture)
 def get_secret(key: str, default=None):
     secret_path = f"/run/secrets/{key}"
     if os.path.exists(secret_path):
@@ -27,4 +27,10 @@ def get_secret(key: str, default=None):
     return os.getenv(key, default)
 
 
+## Google Gemini
 GEMINI_API_KEY = get_secret("GEMINI_API_KEY")
+
+## Amazon Web Services
+AWS_ACCESS_KEY_ID = get_secret("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = get_secret("AWS_SECRET_ACCESS_KEY")
+AWS_REGION = "us-east-1"
