@@ -5,7 +5,7 @@ import boto3
 from aeneas.task import Task
 from datetime import datetime
 from aeneas.executetask import ExecuteTask
-from config.params import TTS_DIR
+from config.params import TTS_DIR, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION
 from config.calm_triggers import CALM_TRIGGERS
 
 
@@ -48,7 +48,11 @@ def generate_tts(
     Saves as a real WAV file with timestamped filename.
     """
     # Initialize Polly client
-    polly = boto3.client("polly")
+    polly = boto3.Session(
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        region_name=AWS_REGION,
+    ).client("polly")
 
     # Create timestamped filename
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
