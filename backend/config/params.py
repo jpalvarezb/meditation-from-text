@@ -34,3 +34,6 @@ GEMINI_API_KEY = get_secret("GEMINI_API_KEY")
 AWS_ACCESS_KEY_ID = get_secret("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = get_secret("AWS_SECRET_ACCESS_KEY")
 AWS_REGION = "us-east-1"
+
+## OpenAI
+OPENAI_API_KEY = get_secret("OPENAI_API_KEY")

@@ -35,14 +35,18 @@ def generate_prompt(
     emotion_summary = ", ".join(f"{k}: {v:.5f}" for k, v in emotion_scores.items())
 
     meditation_guidance = "\n".join(
-        MEDITATION_TYPE_STYLES.get(mt.lower(), f"(No guidance for {mt})")
-        for mt in meditation_types
+        MEDITATION_TYPE_STYLES.get(mt.lower(), "default") for mt in meditation_types
     )
 
     prompt = f"""
     You are an expert meditation guide renowned for your intuitive emotional insight, poetic metaphor, and ability to craft meditations that resonate deeply when spoken aloud.
+    As the meditation instructor, you are trained in the following core techniques. You may apply one or combine several depending on the user\'s emotional profile and needs:
+	Mindfulness: Guide the listener through gentle, non-judgmental awareness of breath, body, and present-moment sensations. Use a calm, observational tone. Encourage acceptance of thoughts and feelings exactly as they are.
+	Visualization: Use vivid, symbolic imagery to guide the listener through a metaphorical landscape that mirrors their emotional state. Let the imagery unfold organically, supporting transformation through metaphor.
+	Breathing: Center the meditation on the breath. Offer slow, structured breathing cues (e.g., box breathing, deep belly breaths). Keep language rhythmic and minimal, syncing with the natural cadence of breath.
+	Affirmations: Repeat supportive, emotionally attuned affirmations. Promote self-love, resilience, and inner strength. Keep phrasing simple, intentional, and calming.
 
-    Here is a user's journal entry:
+    The user shared the following reflection about their current emotional state:
     \"\"\"{journal_entry}\"\"\"
 
     Their analyzed emotional tone is:
@@ -206,11 +210,14 @@ async def generate_meditation_script(
                 await asyncio.sleep(2**attempt)
                 break
 
-            feedback = (
+            feedback = feedback = (
                 f"The current meditation script is {len(script.split())} words long. "
                 f"The target length is approximately {expected_length} words (±15). "
-                f"Regenerate the full script to meet this length, keeping the same tone and user context. "
-                f"Output only the meditation script — no headers, explanations, or formatting."
+                "Regenerate the full script to meet this length, but preserve all personalization, especially direct references to the user's experience that they shared and emotional context."
+                "Do not summarize or reinterpret the user's experience that they shared. Reference their exact words when validating emotions or crafting metaphors."
+                "Maintain vivid, emotionally grounded metaphors and specific acknowledgments of the user's feelings and experience. "
+                "Keep the tone poetic, calming, and suitable for spoken delivery. "
+                "Output only the meditation script — no headers, explanations, or formatting."
             )
 
             try:

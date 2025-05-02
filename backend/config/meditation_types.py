@@ -1,19 +1,34 @@
 MEDITATION_TYPE_STYLES = {
-    "mindfulness": (
-        "Guide the user through gentle, non-judgmental awareness of breath, body, and present-moment sensations. "
-        "Use a calm and observational tone, encouraging acceptance of thoughts and feelings as they arise."
+    "morning": (
+        "Set a calm, hopeful tone for the start of day. Gently energize the user, cultivate intention, and invite presence. "
+        "Use metaphors like sunlight, new beginnings, or open doors."
+        "Start the script with Good Morning."
     ),
-    "visualization": (
-        "Use vivid and symbolic imagery to guide the user through a metaphorical landscape that reflects their emotions. "
-        "Let the imagery unfold naturally and support emotional transformation through metaphor."
+    "evening": (
+        "Help the user reflect, wind down, and gently release the day. Use metaphors like sunsets, still water, or settling dust. "
+        "Support transition from activity to rest."
     ),
-    "breathing": (
-        "Focus entirely on the breath. Guide the user in slow, structured breathing patterns like box breathing or deep belly breathing. "
-        "Keep the script rhythmic and minimal, matching the flow of breath with gentle cues."
+    "sleep": (
+        "Guide the user into deep sleep. Slow your pacing, simplify language, and reduce mental activity. "
+        "Use rhythmic, lullaby-like cues and imagery like waves, darkness, or moonlight."
     ),
-    "affirmations": (
-        "Repeat gentle, supportive affirmations that align with the user's emotional state. "
-        "Encourage self-love, resilience, and inner strength. Phrases should be simple and spoken with intention."
+    "stress release": (
+        "Support emotional unwinding. Acknowledge tension, invite breath, and use imagery of letting go (e.g., exhaling smoke, dropping stones)."
+    ),
+    "conflict resolution": (
+        "Speak with compassion and clarity. Acknowledge emotional pain or regret. Gently guide the user to perspective, forgiveness, or grounding."
+    ),
+    "self-love": (
+        "Encourage warmth, acceptance, and inner kindness. Use affirming language, soft pacing, and gentle metaphor. "
+        "Perfect after moments of insecurity or shame."
+    ),
+    "focus reset": (
+        "Help the user clear distractions and reconnect with clarity. Guide them with sharp, minimal imagery like still lakes, single candles, or deep breath anchors."
+    ),
+    "default": (
+        "Guide the user to present moment awareness. Use gentle reminders to focus on breath, body sensations, and surroundings. "
+        "Use a neutral, calming tone. Avoid strong metaphors or emotional language. "
+        "Encourage acceptance of thoughts and feelings without judgment."
     ),
 }
 # The above dictionary maps meditation types to their corresponding styles.
