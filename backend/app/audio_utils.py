@@ -6,14 +6,18 @@ from config.chime_variants import BAR_CHIME_VARIANTS
 from pydub.effects import low_pass_filter, normalize
 
 
-def build_intro_layer(audio: AudioSegment, target_duration: int) -> AudioSegment:
+def build_intro_layer(
+    audio: AudioSegment, target_duration: int, fade_in_duration: int = 2000
+) -> AudioSegment:
     """
-    Loop and slice ambient/tone to ensure a full-duration intro layer.
+    Loop and slice ambient/tone to ensure a full-duration intro layer,
+    and apply a fade-in to the beginning.
     """
     if len(audio) < target_duration:
         repeats = (target_duration // len(audio)) + 1
         audio = audio * repeats
-    return audio[:target_duration]
+    intro = audio[:target_duration]
+    return intro.fade_in(fade_in_duration)
 
 
 def normalize_volume(audio: AudioSegment, target_dBFS=-18.0) -> AudioSegment:
@@ -59,40 +63,6 @@ def next_bar_chime() -> AudioSegment:
     filename = _chime_rotation.pop(0)
     path = os.path.join(CHIMES_DIR, filename)
     return AudioSegment.from_file(path)
-
-
-def insert_pauses_simple(
-    tts: AudioSegment,
-    alignment: list,
-    start_offset_ms=0,
-    long_pause_after=(".",),
-    short_pause_after=(",",),
-    long_pause_ms=2000,
-    short_pause_ms=700,
-):
-    output = tts
-    inserts = []
-    word_timings = []
-    added_offset = 0
-
-    for seg in alignment:
-        word = seg.get("word", "").strip()
-        end_ms = int(seg["end"] * 1000) + added_offset  # <-- Adjusted!
-        word_timings.append((word, start_offset_ms + end_ms))
-
-        if any(word.endswith(p) for p in long_pause_after):
-            inserts.append((end_ms, long_pause_ms))
-            added_offset += long_pause_ms
-        elif any(word.endswith(p) for p in short_pause_after):
-            inserts.append((end_ms, short_pause_ms))
-            added_offset += short_pause_ms
-
-    for insert_point, pause_ms in reversed(inserts):
-        insert_point = min(insert_point, len(output))
-        silence = AudioSegment.silent(duration=pause_ms)
-        output = output[:insert_point] + silence + output[insert_point:]
-
-    return output, word_timings
 
 
 def extract_word_timings_from_fragments(fragments, offset_ms=0):

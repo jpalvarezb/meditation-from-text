@@ -15,7 +15,7 @@ def generate_prompt(
     emotion_scores: dict,
     time: int,
     spiritual_path: str,
-    meditation_types: list,
+    meditation_type: str,
     mode: str = "tts",
 ) -> str:
     """
@@ -35,7 +35,7 @@ def generate_prompt(
     emotion_summary = ", ".join(f"{k}: {v:.5f}" for k, v in emotion_scores.items())
 
     meditation_guidance = "\n".join(
-        MEDITATION_TYPE_STYLES.get(mt.lower(), "default") for mt in meditation_types
+        MEDITATION_TYPE_STYLES.get(mt.lower(), "default") for mt in meditation_type
     )
 
     prompt = f"""
@@ -46,22 +46,26 @@ def generate_prompt(
 	Breathing: Center the meditation on the breath. Offer slow, structured breathing cues (e.g., box breathing, deep belly breaths). Keep language rhythmic and minimal, syncing with the natural cadence of breath.
 	Affirmations: Repeat supportive, emotionally attuned affirmations. Promote self-love, resilience, and inner strength. Keep phrasing simple, intentional, and calming.
 
-    The user shared the following reflection about their current emotional state:
+    You are writing this meditation for someone who shared the following personal reflection:
     \"\"\"{journal_entry}\"\"\"
+
+    This is their actual, lived experience. Speak to them directly, using second person ("you") throughout the script.
+    Never reinterpret, generalize, or paraphrase what they wrote. Stay anchored to their exact words.
 
     Their analyzed emotional tone is:
     {emotion_summary}
 
     Preferences for this meditation:
     - Duration: {time} minutes
-    - Meditation styles: {", ".join(meditation_types)}
+    - Meditation styles: {", ".join(meditation_type)}
     - Spiritual perspective: {spiritual_path}
 
     Refer to this meditation guidance for stylistic inspiration:
     {meditation_guidance}
 
     When writing the guided meditation script:
-    - Explicitly reference and validate the user's personal experiences and emotions (e.g., anxiety from a work presentation, regret after a conflict). Clearly acknowledge these events before gently abstracting them.
+    - Explicitly reference and validate the user's personal experiences and emotions. Use only details that are directly mentioned or clearly implied by the user's shared experience.
+    - Do **not** fabricate or reference feelings, metaphors, or events not stated in the shared experience. If uncertain, ask or gently reflect using the user's actual words.
     - Create 1-3 vivid, meaningful metaphors or symbolic scenarios closely linked to their experience (e.g., anxiety as "standing exposed in a silent storm").
     - Ensure metaphors organically emerge from the user's described experiences rather than feeling forced or generic.
     - Maintain a warm, compassionate, conversational tone, as though speaking directly to the user in a moment of personal guidance.
@@ -70,6 +74,18 @@ def generate_prompt(
     - Do **not** use ellipses (`...`), emdashes (`—`) since they often cause unnatural stutters in voice playback. Only use line breaks or commas (`,`) for soft pacing instead.
     - This meditation will be used in a real mindfulness app. The listener is expecting a direct, emotionally attuned meditation — not fiction, dialogue, or theatrical storytelling.
     - The final output should feel completely personalized to the user.
+
+    ⚠️ Anchoring Rule:
+    Do not invent or reinterpret events, emotions, or metaphors. All emotional references and imagery must be directly grounded in the user's original words.
+    Use only what they actually wrote, in their exact phrasing.
+
+    ⚠️ Do not reference or invent emotional metaphors (e.g., “storm,” “drowning,” “intense feelings”) unless the user used these terms directly in their journal entry.
+
+    ✅ You must base all emotional references, symbols, or metaphors explicitly on their **own language**.
+
+    ✳️ If a user mentions feeling “hopeful,” “overwhelmed by meetings,” or “anxious after a presentation,” you must use those exact phrases and emotions when validating their experience.
+
+    ⛔ Do not paraphrase the journal entry or reinterpret it. Never reference feelings, scenarios, or symbols the user did not mention.
 
     Your task:
     """

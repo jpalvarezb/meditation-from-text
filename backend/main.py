@@ -10,7 +10,7 @@ async def main():
     journal_entry = (
         "Today I felt overwhelmed by meetings but also hopeful for the future."
     )
-    meditation_types = ["mindfulness", "visualization"]
+    meditation_type = "default"
     spiritual_path = "Buddhist"
     duration_minutes = 3
 
@@ -28,8 +28,8 @@ async def main():
         emotion_scores=emotion_summary,
         time=duration_minutes,
         spiritual_path=spiritual_path,
-        meditation_types=meditation_types,
-        mode="tts",
+        meditation_type=meditation_type,
+        mode="dev",
     )
 
     # --- Step 3: Generate meditation script and save it ---
@@ -42,6 +42,10 @@ async def main():
     # --- Step 4: Load the saved script ---
     with open(script_path, "r") as f:
         script_text = f.read()
+
+    import ipdb
+
+    ipdb.set_trace()
 
     # --- Step 5: Generate TTS from script ---
     print("🔊 Generating TTS audio...")
