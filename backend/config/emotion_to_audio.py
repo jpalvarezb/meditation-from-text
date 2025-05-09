@@ -29,7 +29,7 @@ EMOTION_TO_AUDIO = {
         "tone": "639Hz_60s.wav",
         "tone_volume_dBFS": -35.0,
         "start_chime": "start_chime_paiste_gong.wav",
-        "end_chime": "end_chime_singing_bowl.wav",
+        "end_chime": "end_chime_gong.wav",
     },
     "disgust": {
         "ambient": "disgust_ocean_swell.wav",
@@ -53,7 +53,7 @@ EMOTION_TO_AUDIO = {
         "tone": "432Hz_60s.wav",
         "tone_volume_dBFS": -35.0,
         "start_chime": "start_chime_singing_bowl_2.wav",
-        "end_chime": "nd_chime_gong.wav",
+        "end_chime": "end_chime_singing_bowl.wav",
     },
 }
 # The above dictionary maps emotions to their corresponding audio files and volume levels.

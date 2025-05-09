@@ -26,10 +26,10 @@ async def main():
     prompt = generate_prompt(
         journal_entry=journal_entry,
         emotion_scores=emotion_summary,
-        time=duration_minutes,
+        duration_minutes=duration_minutes,
         spiritual_path=spiritual_path,
         meditation_type=meditation_type,
-        mode="dev",
+        mode="tts",
     )
 
     # --- Step 3: Generate meditation script and save it ---
