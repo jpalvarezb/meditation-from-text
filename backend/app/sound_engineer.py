@@ -39,12 +39,12 @@ def sound_engineer_pipeline(
         target_dBFS=chosen.get("tone_volume_dBFS", -36.0),
     )
     start_chime = AudioSegment.from_file(
-        os.path.join(CHIMES_DIR, chosen.get("start_chime", "start_chime_gong.wav"))
+        os.path.join(
+            CHIMES_DIR, chosen.get("start_chime", "start_chime_paiste_gong.wav")
+        )
     )
     end_chime = AudioSegment.from_file(
-        os.path.join(
-            CHIMES_DIR, chosen.get("end_chime", "start_chime_singing_bowl_1.wav")
-        )
+        os.path.join(CHIMES_DIR, chosen.get("end_chime", "end_chime_singing_bowl.wav"))
     )
 
     # 2) Build intro
