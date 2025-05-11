@@ -26,9 +26,9 @@ def generate_prompt(
     emotion_summary = ", ".join(f"{k}: {v:.5f}" for k, v in emotion_scores.items())
     top_emotion = max(emotion_scores, key=emotion_scores.get)
 
-    # 2) Pull in the style guidance, falling back to "default"
+    # 2) Pull in the style guidance, falling back to "self-love"
     meditation_guidance = MEDITATION_TYPE_STYLES.get(
-        meditation_type.lower(), MEDITATION_TYPE_STYLES["default"]
+        meditation_type.lower(), MEDITATION_TYPE_STYLES["self-love"]
     )
 
     # 2a) Pull the techniques to be used in the meditation
@@ -125,7 +125,6 @@ async def generate_meditation_script(
     - Exponential backoff between retries
     """
     expected_length = time * 135
-
     models = [
         "models/gemini-2.0-flash",
         "models/gemini-2.0-flash-001",

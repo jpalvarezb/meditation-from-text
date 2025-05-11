@@ -41,7 +41,7 @@ def generate_tts(
     Impressions
     Avoid character impressions; speak authentically and naturally.
     Speed of speech:
-    Speak very slowly and evenly. Ensure you take substantial pauses, allowing the listener space to breathe and reflect.
+    Speak as slowly and evenly as possible. Ensure you take substantial pauses, allowing the listener space to breathe and reflect.
     Tone:
     Use a warm, nurturing tone, as if calmly guiding someone to inner stillness.
     Whispering:

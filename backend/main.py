@@ -10,7 +10,7 @@ async def main():
     journal_entry = (
         "Today I felt overwhelmed by meetings but also hopeful for the future."
     )
-    meditation_type = "default"
+    meditation_type = "self-love"
     spiritual_path = "Buddhist"
     duration_minutes = 3
 

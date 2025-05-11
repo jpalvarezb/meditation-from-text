@@ -2,7 +2,6 @@ import os
 import random
 from pydub import AudioSegment
 from config.params import CHIMES_DIR
-from config.chime_variants import BAR_CHIME_VARIANTS
 from pydub.effects import low_pass_filter, normalize
 
 
@@ -55,14 +54,14 @@ def soften_voice(voice_audio: AudioSegment) -> AudioSegment:
 _chime_rotation = []
 
 
-def next_bar_chime() -> AudioSegment:
+def next_bar_chime(chosen_interchime_folder: str) -> AudioSegment:
     global _chime_rotation
+    interchime_path = os.path.join(CHIMES_DIR, chosen_interchime_folder)
     if not _chime_rotation:
-        _chime_rotation = BAR_CHIME_VARIANTS[:]
+        _chime_rotation = os.listdir(interchime_path)
         random.shuffle(_chime_rotation)
     filename = _chime_rotation.pop(0)
-    path = os.path.join(CHIMES_DIR, filename)
-    return AudioSegment.from_file(path)
+    return AudioSegment.from_file(os.path.join(interchime_path, filename))
 
 
 def extract_word_timings_from_fragments(fragments, offset_ms=0):

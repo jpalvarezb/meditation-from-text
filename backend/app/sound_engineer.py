@@ -103,7 +103,8 @@ def sound_engineer_pipeline(
     ):
         if word.lower().strip(".,!?") in TRIGGER_WORDS:
             base_mix = base_mix.overlay(
-                normalize_volume(next_bar_chime(), -40.0), position=ms
+                normalize_volume(next_bar_chime(chosen["interchimes"]), -40.0),
+                position=ms,
             )
 
     # 9) Overlay end chime _at_ the TTS end:
