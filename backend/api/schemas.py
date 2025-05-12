@@ -5,7 +5,15 @@ from typing import Literal
 class MeditationRequest(BaseModel):
     journal_entry: str
     duration_minutes: int
-    meditation_type: Literal["mindfulness", "visualization", "breathing", "affirmation"]
+    meditation_type: Literal[
+        "morning",
+        "evening",
+        "sleep",
+        "stress release",
+        "conflict resolution",
+        "self-love",
+        "focus reset",
+    ]
     mode: Literal["tts", "dev"] = "tts"
 
 

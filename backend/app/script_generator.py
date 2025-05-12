@@ -189,6 +189,9 @@ async def generate_meditation_script(
         while True:
             word_count = len(script.split())
             if length_threshold(time, word_count):
+                logger.info(
+                    f"Script passed {word_count} words threshold check after {loops}/{max_loops} refinement loops."
+                )
                 succeeded = True
                 break
 

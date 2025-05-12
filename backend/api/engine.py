@@ -26,9 +26,9 @@ async def meditation_engine(
         prompt = generate_prompt(
             journal_entry=journal_entry,
             emotion_scores=emotion_summary,
-            time=duration_minutes,
+            duration_minutes=duration_minutes,
             spiritual_path="Buddhist",  # TODO: Need more audio assets for other paths
-            meditation_types=[meditation_type],
+            meditation_type=meditation_type,
             mode=mode,
         )
         logger.debug(f"Prompt: {prompt}")
