@@ -107,12 +107,17 @@ def sound_engineer_pipeline(
                 position=ms,
             )
 
-    # 9) Overlay end chime _at_ the TTS end:
-    final_chime = build_outro_segment(end_chime)
-    base_mix = base_mix.overlay(final_chime, position=tts_len)
+    # 9) Build and append outro segment:
+    final_chime = build_outro_segment(end_chime, background=bg_faded, tts_len=tts_len)
+
+    # Ensure base_mix long enough for clean append
+    if len(base_mix) < tts_len:
+        base_mix += AudioSegment.silent(duration=tts_len - len(base_mix))
+
+    final_mix = base_mix.append(final_chime, crossfade=0)
 
     # 10) Export
     out_path = os.path.join(OUTPUT_DIR, output_filename)
-    base_mix.export(out_path, format="wav")
+    final_mix.export(out_path, format="mp3")
 
     return out_path

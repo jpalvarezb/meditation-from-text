@@ -124,7 +124,6 @@ async def generate_meditation_script(
     - Retry full generation if feedback refinement fails
     - Exponential backoff between retries
     """
-    expected_length = time * 135
     models = [
         "models/gemini-2.0-flash",
         "models/gemini-2.0-flash-001",
@@ -182,11 +181,7 @@ async def generate_meditation_script(
 
         # --- Refinement loop to adjust length ---
         loops = 0
-        # start fallbacks from the model that just worked
-        fallback_models = models[models.index(model_used) :]
-        model_index = 0
-
-        while True:
+        while loops < max_loops:
             word_count = len(script.split())
             if length_threshold(time, word_count):
                 logger.info(
@@ -195,56 +190,19 @@ async def generate_meditation_script(
                 succeeded = True
                 break
 
-            loops += 1
-            if loops >= max_loops:
-                logger.info(
-                    f"Max refinement loops reached {loops}/{max_loops}. Restarting full generation..."
-                )
-                await asyncio.sleep(2**attempt)
-                break
-
-            feedback = (
-                f"The current meditation script is {word_count} words long. "
-                f"The target is ~{expected_length} words (±10%).\n\n"
-                "Please regenerate the full script to match this length, "
-                "preserving every personal detail and direct reference to the experience shared. "
-                "Do NOT summarize or reinterpret—use the user's exact words when validating emotions or crafting metaphors. "
-                "Maintain vivid, emotionally grounded imagery. Output only the script—no headers or explanations."
+            logger.info(
+                f"Script failed {word_count} words threshold check after {loops + 1}/{max_loops} refinement loops. Restarting full generation..."
             )
-
+            loops += 1
+            await asyncio.sleep(2**attempt)
             try:
-                chat = client.aio.chats.create(model=fallback_models[model_index])
-                response = await chat.send_message(feedback)
+                # Re-run generation
+                chat = client.aio.chats.create(model=model_used)
+                response = await chat.send_message(prompt)
                 script = response.text
-            except ServerError as e:
-                if "503" in str(e):
-                    logger.warning(
-                        f"Model {fallback_models[model_index]} overloaded during refinement. Trying next..."
-                    )
-                    model_index = min(model_index + 1, len(fallback_models) - 1)
-                    await asyncio.sleep(2**attempt)
-                    continue
-                else:
-                    raise
-            except ClientError as e:
-                if e.code == 429:
-                    retry_delay = 30
-                    try:
-                        details = e.details["error"]["details"][2]
-                        retry_delay = (
-                            int(details.get("retryDelay", "30s").rstrip("s")) or 30
-                        )
-                    except (KeyError, IndexError, TypeError, ValueError) as parse_error:
-                        logger.warning(
-                            f"Could not parse retryDelay, using default: {parse_error}"
-                        )
-                    logger.warning(
-                        f"Rate limit in refinement. Sleeping {retry_delay}s..."
-                    )
-                    await asyncio.sleep(retry_delay)
-                    continue
-                else:
-                    raise
+            except Exception as regen_error:
+                logger.warning(f"Regeneration failed: {regen_error}")
+                break
 
         # if we hit the length target, break out of retry loop
         if succeeded:

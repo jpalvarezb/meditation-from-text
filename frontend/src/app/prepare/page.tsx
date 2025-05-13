@@ -10,8 +10,18 @@ export default function PreparePage() {
   const [type, setType] = useState('morning');
   const router = useRouter();
 
-  const handleNext = () => {
-    router.push('/meditation'); // replace with your actual next route
+  const handleSubmit = () => {
+    const journal_entry = sessionStorage.getItem('journal_entry');
+
+    if (!journal_entry) {
+      alert("Missing journal entry. Please return and enter your thoughts.");
+      return;
+    }
+
+    sessionStorage.setItem('journal_entry', journal_entry);
+    sessionStorage.setItem('duration', duration);
+    sessionStorage.setItem('meditation_type', type);
+    router.push('/meditation');
   };
 
   return (
@@ -118,7 +128,7 @@ export default function PreparePage() {
           Cancel
         </button>
         <button
-          onClick={handleNext}
+          onClick={handleSubmit}
           style={{
             backgroundColor: '#3A53F7',
             color: '#F9F9F5',

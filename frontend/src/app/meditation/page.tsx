@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Orb from '@/components/Orb';
 import { Pause } from 'lucide-react';
 import HamburgerMenu from '@/components/HamburgerMenu';
@@ -12,48 +12,89 @@ export default function LoadingPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [meditationEnded, setMeditationEnded] = useState(false);
+  const [audioPath, setAudioPath] = useState<string | null>(null);
+  const didRun = useRef(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-      const duration = 1000;
-      const from = 0.5;
-      const to = 0.2;
-      let start: number | null = null;
+    const fetchMeditation = async () => {
+      if (didRun.current) return;
+      didRun.current = true;
 
-      const animate = (timestamp: number) => {
-        if (start === null) start = timestamp;
-        const elapsed = timestamp - start;
-        const progress = Math.min(elapsed / duration, 1);
-        const eased = from + (to - from) * (1 - Math.pow(1 - progress, 4)); // easeOutQuart
-        setDistortion(eased);
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        }
-      };
+      try {
+        const journal_entry = sessionStorage.getItem('journal_entry') || '';
+        const duration_minutes = parseInt(sessionStorage.getItem('duration') || '5', 10);
+        const meditation_type = sessionStorage.getItem('meditation_type') || 'morning';
 
-      requestAnimationFrame(animate);
-      setPlayVisible(true);
-    }, 4000);
+        const response = await fetch('http://localhost:8000/meditate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ journal_entry, duration_minutes, meditation_type }),
+        });
 
-    return () => clearTimeout(timer);
+        if (!response.ok) throw new Error('Meditation generation failed');
+
+        const data = await response.json();
+const fullPath = data.final_audio_path;  // e.g. "/app/assets/audio/output/final_20250513_184645.mp3"
+const filename = fullPath?.split('/output/').at(-1);  // gives "final_20250513_184645.mp3"
+if (filename) setAudioPath(`/output/${filename}`);
+      } catch (err) {
+        console.error('Failed to fetch meditation:', err);
+      }
+    };
+
+    fetchMeditation();
   }, []);
 
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (!audioPath) return;
+
+    setLoading(false);
+    const duration = 1000;
+    const from = 0.5;
+    const to = 0.2;
+    let start: number | null = null;
+
+    const animate = (timestamp: number) => {
+      if (start === null) start = timestamp;
+      const elapsed = timestamp - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = from + (to - from) * (1 - Math.pow(1 - progress, 4)); // easeOutQuart
+      setDistortion(eased);
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    requestAnimationFrame(animate);
+    setPlayVisible(true);
+  }, [audioPath]);
+
   const handlePlay = () => {
+    if (loading) return;
     if (meditationEnded) return;
+    if (!audioRef.current) {
+      audioRef.current = new Audio(audioPath ?? '/output/final.mp3');
+      audioRef.current.addEventListener('ended', () => {
+        setIsPlaying(false);
+        setShowControls(false);
+        setMeditationEnded(true);
+      });
+    }
+    audioRef.current.play();
     setIsPlaying(true);
     setShowControls(true);
-    console.log('Play meditation');
-    setTimeout(() => {
-      setIsPlaying(false);
-      setShowControls(false);
-      setMeditationEnded(true);
-    }, 10000); // or desired duration
   };
 
   const handleRestart = () => {
-    setMeditationEnded(false);
-    setPlayVisible(true);
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play();
+      setIsPlaying(true);
+      setShowControls(true);
+      setMeditationEnded(false);
+    }
   };
 
   return (
@@ -171,7 +212,16 @@ export default function LoadingPage() {
               alignItems: 'center',
               justifyContent: 'center',
             }}
-            onClick={() => setIsPlaying(!isPlaying)}
+            onClick={() => {
+              if (audioRef.current) {
+                if (isPlaying) {
+                  audioRef.current.pause();
+                } else {
+                  audioRef.current.play();
+                }
+                setIsPlaying(!isPlaying);
+              }
+            }}
           >
             {isPlaying ? (
               <Pause size={40} strokeWidth={0} color="black" fill="black" />

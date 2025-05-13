@@ -52,14 +52,21 @@ def soften_voice(voice_audio: AudioSegment) -> AudioSegment:
 
 
 _chime_rotation = []
+_last_interchime_folder = None
 
 
 def next_bar_chime(chosen_interchime_folder: str) -> AudioSegment:
-    global _chime_rotation
+    global _chime_rotation, _last_interchime_folder
     interchime_path = os.path.join(CHIMES_DIR, chosen_interchime_folder)
+
+    if _last_interchime_folder != chosen_interchime_folder:
+        _chime_rotation = []
+        _last_interchime_folder = chosen_interchime_folder
+
     if not _chime_rotation:
         _chime_rotation = os.listdir(interchime_path)
         random.shuffle(_chime_rotation)
+
     filename = _chime_rotation.pop(0)
     return AudioSegment.from_file(os.path.join(interchime_path, filename))
 
@@ -106,21 +113,14 @@ def build_seamless_loop(
 
 
 def build_outro_segment(
-    end_chime: AudioSegment,
-    chime_fade_out_duration: int = 4000,
+    chime: AudioSegment, background: AudioSegment, start_ms: int
 ) -> AudioSegment:
-    """
-    Process the end chime: #TODO (optionally) apply a curved fade-out to the end of the chime.
-    """
+    fade_out_duration = len(chime)
 
-    # 1) Apply fade-out to the tail of the chime
-    if chime_fade_out_duration > 0 and len(end_chime) > chime_fade_out_duration:
-        chime_head = end_chime[:-chime_fade_out_duration]
-        chime_tail = end_chime[-chime_fade_out_duration:].fade_out(
-            chime_fade_out_duration
-        )
-        final_chime = chime_head + chime_tail
-    else:
-        final_chime = end_chime
+    # Slice background from start_ms to end of fade
+    bg_tail = background[start_ms : start_ms + fade_out_duration]
+    if len(bg_tail) < fade_out_duration:
+        bg_tail += AudioSegment.silent(duration=fade_out_duration - len(bg_tail))
 
-    return final_chime
+    bg_tail_faded = bg_tail.fade_out(fade_out_duration)
+    return bg_tail_faded.overlay(chime)

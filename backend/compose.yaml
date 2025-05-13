@@ -12,6 +12,7 @@ services:
       - ./api:/app/api
       - ./config:/app/config
       - ./assets:/app/assets
+      - ../frontend/public/output:/app/assets/audio/output
     secrets:
       - GEMINI_API_KEY
       - OPENAI_API_KEY

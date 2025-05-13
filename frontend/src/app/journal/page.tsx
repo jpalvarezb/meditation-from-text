@@ -9,6 +9,11 @@ export default function JournalEntry() {
   const [text, setText] = useState('');
   const router = useRouter();
 
+  const handleNext = () => {
+    sessionStorage.setItem("journal_entry", text);
+    router.push("/prepare");
+  };
+
   return (
     <main
       style={{
@@ -90,10 +95,7 @@ export default function JournalEntry() {
           </svg>
         </button>
         <button
-          onClick={() => {
-            console.log(text); // or store to context/global state
-            router.push('/prepare');
-          }}
+          onClick={handleNext}
           style={{
             backgroundColor: '#3A53F7',
             border: 'none',

@@ -56,7 +56,7 @@ async def meditation_engine(
         logger.info(f"Alignment JSON saved at: {alignment_path}")
 
         logger.info("Sound engineering final meditation...")
-        output_filename = f"final_{datetime.now().strftime('%Y%m%d_%H%M%S')}.wav"
+        output_filename = f"final_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3"
         final_mix_path = sound_engineer_pipeline(
             tts_path=tts_path,
             alignment_json_path=alignment_path,
