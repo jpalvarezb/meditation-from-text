@@ -1,0 +1,113 @@
+'use client';
+
+import React, { useState } from 'react';
+import { ChevronLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+
+export default function JournalEntry() {
+  const [text, setText] = useState('');
+  const router = useRouter();
+
+  return (
+    <main
+      style={{
+        backgroundColor: '#F9E66B',
+        width: '100vw',
+        height: '100vh',
+        margin: 0,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      <button
+        onClick={() => (window.location.href = '/')}
+        style={{
+          position: 'absolute',
+          background: 'transparent',
+          top: '20px',
+          left: '20px',
+          zIndex: 100,
+          border: 'none',
+          cursor: 'pointer',
+          color: '#333',
+        }}
+      >
+      <ChevronLeft size={24} color="#3A53F7" />
+      </button>
+
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Tell me, what's on your mind..."
+        autoFocus
+        className="entry"
+      />
+
+      <style jsx>{`
+        .entry {
+          width: 80%;
+          height: 60%;
+          background: transparent;
+          border: none;
+          outline: none;
+          resize: none;
+          font-family: Helvetica, sans-serif;
+          font-weight: lighter;
+          font-size: 1.25rem;
+          color: #333;
+          caret-color: #0A29F4;
+        }
+        .entry::placeholder {
+          color: #B0B0B0; /* light grey */
+        }
+      `}</style>
+            <div style={{
+        position: 'absolute',
+        bottom: '20px',
+        right: '20px',
+        display: 'flex',
+        gap: '12px',
+        alignItems: 'center'
+      }}>
+        <button
+          style={{
+            backgroundColor: '#F9F9F5',
+            border: 'none',
+            borderRadius: '50%',
+            width: '40px',
+            height: '40px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer'
+          }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 0 24 24" width="20" fill="#3A53F7">
+          <path d="M12 14c1.66 0 3-1.34 3-3V5a3 3 0 00-6 0v6c0 1.66 1.34 3 3 3z"/>
+          <path d="M17.3 11c-.49 2.54-2.69 4.5-5.3 4.5s-4.81-1.96-5.3-4.5H5c.53 3.12 3.07 5.45 6.3 5.91V20h1.4v-3.09c3.23-.46 5.77-2.79 6.3-5.91h-1.7z"/>
+          </svg>
+        </button>
+        <button
+          onClick={() => {
+            console.log(text); // or store to context/global state
+            router.push('/prepare');
+          }}
+          style={{
+            backgroundColor: '#3A53F7',
+            border: 'none',
+            borderRadius: '9999px',
+            padding: '0.5rem 1rem',
+            color: '#F9F9F5',
+            fontFamily: 'inherit',
+            fontSize: '1rem',
+            cursor: 'pointer'
+          }}
+        >
+          Next
+        </button>
+      </div>
+    </main>
+  );
+}
