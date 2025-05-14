@@ -2,8 +2,10 @@ import os
 from openai import OpenAI
 from aeneas.task import Task
 from datetime import datetime
+from app.logger import logger
+from app.cloud_utils import upload_to_gcs
 from aeneas.executetask import ExecuteTask
-from config.params import TTS_DIR, OPENAI_API_KEY
+from config.params import TTS_DIR, OPENAI_API_KEY, IS_PROD
 
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
@@ -20,7 +22,7 @@ def generate_tts(
     """
 
     # Create timestamped filename
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     audio_filename = f"tts_audio_{timestamp}.wav"
     audio_output_path = os.path.join(
         TTS_DIR,
@@ -33,7 +35,7 @@ def generate_tts(
         voice=voice,
         instructions=""""
     Accent:
-    Use a soft, neutral American accent with no regional inflection.
+    Use a soft, neutral British accent with no regional inflection.
     Emotional range:
     Keep the emotional expression subtle and steady, avoiding strong emotional peaks.
     Intonation
@@ -51,6 +53,18 @@ def generate_tts(
     ) as response:
         # Save the audio response to created file
         response.stream_to_file(audio_output_path)
+    if IS_PROD:
+        gcs_output = upload_to_gcs(local_path=audio_output_path)
+        logger.info(f"TTS audio uploaded to GCS: {gcs_output}")
+        try:
+            os.remove(audio_output_path)
+            logger.debug(
+                f"Deleted local TTS audio file after upload: {audio_output_path}"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to delete local TTS audio: {e}")
+        return gcs_output
+
     return audio_output_path
 
 
@@ -68,5 +82,16 @@ def align_audio_text(audio_path: str, text_path: str, output_json_path: str) -> 
 
     ExecuteTask(task).execute()
     task.output_sync_map_file()
+    if IS_PROD:
+        gcs_output = upload_to_gcs(local_path=output_json_path)
+        logger.info(f"Alignment JSON uploaded to GCS: {gcs_output}")
+        try:
+            os.remove(output_json_path)
+            logger.debug(
+                f"Deleted local alignment JSON file after upload: {output_json_path}"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to delete local alignment JSON: {e}")
+        return gcs_output
 
     return output_json_path
