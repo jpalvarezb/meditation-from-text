@@ -6,9 +6,14 @@ from app.logger import logger
 from config.params import GEMINI_API_KEY, TTS_DIR
 from google.genai.errors import ServerError, ClientError
 from config.meditation_types import MEDITATION_TYPE_STYLES
-from config.emotion_techniques import EMOTION_TO_TECHNIQUES, MEDITATION_TECHNIQUES
+from app.cloud_utils import upload_to_gcs
+from config.emotion_techniques import (
+    EMOTION_TO_TECHNIQUES,
+    MEDITATION_TECHNIQUES,
+    IS_PROD,
+)
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+default_client = genai.Client(api_key=GEMINI_API_KEY)
 
 
 def generate_prompt(
@@ -114,7 +119,7 @@ def length_threshold(time: int, word_count: int, tolerance: float = 0.30) -> boo
 async def generate_meditation_script(
     prompt: str,
     time: int,
-    client=client,
+    client=None,
     max_loops: int = 10,
     max_total_retries: int = 3,
 ) -> str:
@@ -124,6 +129,9 @@ async def generate_meditation_script(
     - Retry full generation if feedback refinement fails
     - Exponential backoff between retries
     """
+    if client is None:
+        client = default_client
+
     models = [
         "models/gemini-2.0-flash",
         "models/gemini-2.0-flash-001",
@@ -216,7 +224,7 @@ async def generate_meditation_script(
         raise RuntimeError("Meditation generation failed.")
 
     # Save the final script
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     script_filename = f"script_{timestamp}.txt"
     script_output_path = os.path.join(TTS_DIR, script_filename)
     with open(script_output_path, "w") as f:
@@ -224,5 +232,16 @@ async def generate_meditation_script(
     logger.info(
         f"Script generated successfully after attempt {attempt + 1} using {model_used}"
     )
+    if IS_PROD:
+        gcs_output = upload_to_gcs(local_path=script_output_path)
+        logger.info(f"Script uploaded to GCS: {gcs_output}")
+        try:
+            os.remove(script_output_path)
+            logger.debug(
+                f"Deleted local script file after upload: {script_output_path}"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to delete local script: {e}")
+        return gcs_output
 
     return script_output_path

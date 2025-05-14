@@ -2,6 +2,8 @@ import os
 
 ## Production // Development
 LOG_LEVEL = "DEBUG"  # "INFO" or "DEBUG"
+ENV = os.getenv("ENV", "local")  # fallback to local if not set
+IS_PROD = ENV == "prod"
 
 # Local Directories
 BASE_ROOT = os.path.dirname(os.path.dirname(__file__))
@@ -12,7 +14,12 @@ SOUNDSCAPES_DIR = os.path.join(AUDIO_ROOT, "soundscapes")
 CHIMES_DIR = os.path.join(AUDIO_ROOT, "chimes")
 TONES_DIR = os.path.join(AUDIO_ROOT, "tones")
 TTS_DIR = os.path.join(AUDIO_ROOT, "tts")
-OUTPUT_DIR = os.path.join(AUDIO_ROOT, "output")
+
+# Output Directory
+if IS_PROD:
+    OUTPUT_DIR = "/tmp/output"
+else:
+    OUTPUT_DIR = os.path.join(AUDIO_ROOT, "output")
 
 # Logging
 LOGS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs")
@@ -27,8 +34,11 @@ def get_secret(key: str, default=None):
     return os.getenv(key, default)
 
 
-## Google Gemini
+## Google Services
 GEMINI_API_KEY = get_secret("GEMINI_API_KEY")
+PROJECT_ID = os.getenv("PROJECT_ID", "minday-project")
+AUDIO_BUCKET = os.getenv("AUDIO_BUCKET", "minday-audio")
+AUDIO_BUCKET_REGION = os.getenv("AUDIO_BUCKET_REGION", "northamerica-south1")
 
 ## Amazon Web Services
 AWS_ACCESS_KEY_ID = get_secret("AWS_ACCESS_KEY_ID")

@@ -43,10 +43,6 @@ async def main():
     with open(script_path, "r") as f:
         script_text = f.read()
 
-    import ipdb
-
-    ipdb.set_trace()
-
     # --- Step 5: Generate TTS from script ---
     print("🔊 Generating TTS audio...")
     tts_path = generate_tts(script_text)
