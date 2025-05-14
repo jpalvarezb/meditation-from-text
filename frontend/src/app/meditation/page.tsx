@@ -14,36 +14,35 @@ export default function LoadingPage() {
   const [meditationEnded, setMeditationEnded] = useState(false);
   const [audioPath, setAudioPath] = useState<string | null>(null);
   const didRun = useRef(false);
+useEffect(() => {
+  if (didRun.current) return;
+  didRun.current = true;
 
-  useEffect(() => {
-    const fetchMeditation = async () => {
-      if (didRun.current) return;
-      didRun.current = true;
+  const fetchMeditation = async () => {
+    try {
+      const journal_entry = sessionStorage.getItem('journal_entry') || '';
+      const duration_minutes = parseInt(sessionStorage.getItem('duration') || '5', 10);
+      const meditation_type = sessionStorage.getItem('meditation_type') || 'self-love';
 
-      try {
-        const journal_entry = sessionStorage.getItem('journal_entry') || '';
-        const duration_minutes = parseInt(sessionStorage.getItem('duration') || '5', 10);
-        const meditation_type = sessionStorage.getItem('meditation_type') || 'morning';
+      const response = await fetch('http://localhost:8000/meditate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ journal_entry, duration_minutes, meditation_type }),
+      });
 
-        const response = await fetch('http://localhost:8000/meditate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ journal_entry, duration_minutes, meditation_type }),
-        });
+      if (!response.ok) throw new Error('Meditation generation failed');
 
-        if (!response.ok) throw new Error('Meditation generation failed');
+      const data = await response.json();
+      const fullPath = data.final_audio_path;
+      const filename = fullPath?.split('/output/').pop();
+      if (filename) setAudioPath(`/output/${filename}`);
+    } catch (err) {
+      console.error('Failed to fetch meditation:', err);
+    }
+  };
 
-        const data = await response.json();
-const fullPath = data.final_audio_path;  // e.g. "/app/assets/audio/output/final_20250513_184645.mp3"
-const filename = fullPath?.split('/output/').at(-1);  // gives "final_20250513_184645.mp3"
-if (filename) setAudioPath(`/output/${filename}`);
-      } catch (err) {
-        console.error('Failed to fetch meditation:', err);
-      }
-    };
-
-    fetchMeditation();
-  }, []);
+  fetchMeditation();
+}, []);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 

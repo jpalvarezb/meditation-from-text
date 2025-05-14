@@ -102,10 +102,10 @@ export default function PreparePage() {
         >
           <option value="focus reset">focus</option>
           <option value="morning">morning</option>
-          <option value="self-love">self-love</option>
+          <option value="self-love">self care</option>
           <option value="stress release">stress release</option>
           <option value="conflict resolution">post-conflict</option>
-          <option value="afternoon">evening</option>
+          <option value="evening">afternoon</option>
           <option value="sleep">sleep</option>
         </select>{' '}
         meditation, please.

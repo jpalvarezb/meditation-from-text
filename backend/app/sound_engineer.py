@@ -68,6 +68,8 @@ def sound_engineer_pipeline(
     tts_offset = detect_chime_tail(start_chime)
     tts_full = AudioSegment.silent(tts_offset) + softened
     tts_len = len(tts_full)
+    delay_ms = 3000
+    start_ms = tts_len + delay_ms
 
     # 5) Decide how long our final background needs to be:
     outro_len = len(end_chime)
@@ -108,13 +110,21 @@ def sound_engineer_pipeline(
             )
 
     # 9) Build and append outro segment:
-    final_chime = build_outro_segment(end_chime, background=bg_faded, tts_len=tts_len)
+    # ensure bg_faded is long enough to cover delay
+    if len(bg_faded) < start_ms:
+        bg_faded += AudioSegment.silent(duration=start_ms - len(bg_faded))
+
+    # build the outro segment using the delayed start
+    final_chime = build_outro_segment(end_chime, background=bg_faded, start_ms=start_ms)
+
+    # trim off everything after the delay so no extra background remains
+    base_core = base_mix[:start_ms]
 
     # Ensure base_mix long enough for clean append
     if len(base_mix) < tts_len:
         base_mix += AudioSegment.silent(duration=tts_len - len(base_mix))
 
-    final_mix = base_mix.append(final_chime, crossfade=0)
+    final_mix = (base_core + final_chime).fade_out(len(end_chime))
 
     # 10) Export
     out_path = os.path.join(OUTPUT_DIR, output_filename)
