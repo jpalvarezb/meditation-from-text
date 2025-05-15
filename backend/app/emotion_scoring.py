@@ -1,10 +1,14 @@
 import re
-from transformers import pipeline
+from optimum.onnxruntime import ORTModelForSequenceClassification
+from transformers import AutoTokenizer, pipeline
+
+model_path = "./emotion_model"  # relative to /app
+
+model = ORTModelForSequenceClassification.from_pretrained(model_path)
+tokenizer = AutoTokenizer.from_pretrained(model_path)
 
 classifier = pipeline(
-    "text-classification",
-    model="j-hartmann/emotion-english-distilroberta-base",
-    top_k=None,
+    "text-classification", model=model, tokenizer=tokenizer, top_k=None
 )
 
 

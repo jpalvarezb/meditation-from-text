@@ -1,8 +1,10 @@
 import os
 import random
+import json
 from pydub import AudioSegment
-from config.params import CHIMES_DIR
+from app.cloud_utils import fetch_from_gcs
 from pydub.effects import low_pass_filter, normalize
+from config.params import CHIMES_DIR, AUDIO_ROOT, IS_PROD, GCP_AUDIO_BUCKET
 
 
 def build_intro_layer(
@@ -49,26 +51,6 @@ def soften_voice(voice_audio: AudioSegment) -> AudioSegment:
     voice = low_pass_filter(voice, cutoff=4000)
     voice = normalize(voice)
     return voice
-
-
-_chime_rotation = []
-_last_interchime_folder = None
-
-
-def next_bar_chime(chosen_interchime_folder: str) -> AudioSegment:
-    global _chime_rotation, _last_interchime_folder
-    interchime_path = os.path.join(CHIMES_DIR, chosen_interchime_folder)
-
-    if _last_interchime_folder != chosen_interchime_folder:
-        _chime_rotation = []
-        _last_interchime_folder = chosen_interchime_folder
-
-    if not _chime_rotation:
-        _chime_rotation = os.listdir(interchime_path)
-        random.shuffle(_chime_rotation)
-
-    filename = _chime_rotation.pop(0)
-    return AudioSegment.from_file(os.path.join(interchime_path, filename))
 
 
 def extract_word_timings_from_fragments(fragments, offset_ms=0):
@@ -124,3 +106,67 @@ def build_outro_segment(
 
     bg_tail_faded = bg_tail.fade_out(fade_out_duration)
     return bg_tail_faded.overlay(chime)
+
+
+def load_audio_asset(rel_path: str) -> AudioSegment:
+    """
+    Loads an audio file either from local disk or from GCS into a Pydub AudioSegment.
+    `rel_path` may be absolute or relative under AUDIO_ROOT; the same sub-folder
+    structure is used in the bucket.
+    """
+    # Always compute the path relative to AUDIO_ROOT
+    full_path = os.path.normpath(os.path.join(AUDIO_ROOT, rel_path))
+    rel_path = os.path.relpath(full_path, AUDIO_ROOT)
+
+    # 2. In prod, fetch from GCS under the same sub-path
+    if IS_PROD:
+        # convert OS separators to forward slashes for GCS
+        bucket_subpath = rel_path.replace(os.sep, "/")
+        gcs_path = f"gs://{GCP_AUDIO_BUCKET}/{bucket_subpath}"
+        tmp_path = os.path.join("/tmp", rel_path)
+        os.makedirs(os.path.dirname(tmp_path), exist_ok=True)
+        fetch_from_gcs(gcs_path, tmp_path)
+        return AudioSegment.from_file(tmp_path)
+
+    # 3. In dev, load directly from local AUDIO_ROOT
+    local_path = os.path.join(AUDIO_ROOT, rel_path)
+    return AudioSegment.from_file(local_path)
+
+
+_chime_rotation = []
+_last_interchime_folder = None
+
+
+def next_bar_chime(chosen_interchime_folder: str) -> AudioSegment:
+    global _chime_rotation, _last_interchime_folder
+
+    if _last_interchime_folder != chosen_interchime_folder:
+        _chime_rotation = []
+        _last_interchime_folder = chosen_interchime_folder
+
+    if not _chime_rotation:
+        # Load manifest
+        manifest_rel = f"chimes/{chosen_interchime_folder}/manifest.json"
+        if IS_PROD:
+            # Download manifest from GCS
+            local_manifest = os.path.join(
+                "/tmp", "chimes", chosen_interchime_folder, "manifest.json"
+            )
+            os.makedirs(os.path.dirname(local_manifest), exist_ok=True)
+            fetch_from_gcs(f"gs://{GCP_AUDIO_BUCKET}/{manifest_rel}", local_manifest)
+        else:
+            # Read local manifest
+            local_manifest = os.path.join(
+                CHIMES_DIR, chosen_interchime_folder, "manifest.json"
+            )
+
+        with open(local_manifest, "r") as mf:
+            files = json.load(mf)
+
+        _chime_rotation = files.copy()
+        random.shuffle(_chime_rotation)
+
+    # Pop the next chime filename and load
+    filename = _chime_rotation.pop(0)
+    rel_audio = f"chimes/{chosen_interchime_folder}/{filename}"
+    return load_audio_asset(rel_audio)

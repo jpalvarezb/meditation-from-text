@@ -32,7 +32,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
 COPY api ./api
 COPY config ./config
-COPY assets ./assets
+COPY emotion_model/ ./emotion_model/
 
 # Create secrets dir (used at runtime, not build time)
 RUN mkdir -p /run/secrets

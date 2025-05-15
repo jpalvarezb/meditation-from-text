@@ -3,14 +3,13 @@ import asyncio
 from google import genai
 from datetime import datetime
 from app.logger import logger
-from config.params import GEMINI_API_KEY, TTS_DIR
+from config.params import GEMINI_API_KEY, TTS_DIR, IS_PROD
 from google.genai.errors import ServerError, ClientError
 from config.meditation_types import MEDITATION_TYPE_STYLES
 from app.cloud_utils import upload_to_gcs
 from config.emotion_techniques import (
     EMOTION_TO_TECHNIQUES,
     MEDITATION_TECHNIQUES,
-    IS_PROD,
 )
 
 default_client = genai.Client(api_key=GEMINI_API_KEY)

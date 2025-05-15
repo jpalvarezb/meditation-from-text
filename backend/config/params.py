@@ -36,9 +36,9 @@ def get_secret(key: str, default=None):
 
 ## Google Services
 GEMINI_API_KEY = get_secret("GEMINI_API_KEY")
-PROJECT_ID = os.getenv("PROJECT_ID", "minday-project")
-AUDIO_BUCKET = os.getenv("AUDIO_BUCKET", "minday-audio")
-AUDIO_BUCKET_REGION = os.getenv("AUDIO_BUCKET_REGION", "northamerica-south1")
+GCP_PROJECT_ID = os.getenv("PROJECT_ID", "minday-project")
+GCP_AUDIO_BUCKET = os.getenv("AUDIO_BUCKET", "minday-audio")
+GCP_AUDIO_BUCKET_REGION = os.getenv("AUDIO_BUCKET_REGION", "northamerica-south1")
 
 ## Amazon Web Services
 AWS_ACCESS_KEY_ID = get_secret("AWS_ACCESS_KEY_ID")
