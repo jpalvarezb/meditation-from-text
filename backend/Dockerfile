@@ -8,15 +8,16 @@ WORKDIR /app
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies (minimal and required for aeneas + ffmpeg)
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && \
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     ffmpeg \
     espeak \
     libespeak-dev \
     libmagic-dev \
     build-essential \
-    git \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/*
+    git && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/*
 
 # Pre-install compatible versions for aeneas build
 RUN pip install --no-cache-dir "numpy<2" setuptools wheel
@@ -37,5 +38,7 @@ COPY emotion_model/ ./emotion_model/
 # Create secrets dir (used at runtime, not build time)
 RUN mkdir -p /run/secrets
 
+EXPOSE 8080
+
 # Default command
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8080"]
