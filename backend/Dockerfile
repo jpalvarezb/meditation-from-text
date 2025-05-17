@@ -37,6 +37,7 @@ COPY emotion_model/ ./emotion_model/
 
 # Create secrets dir (used at runtime, not build time)
 RUN mkdir -p /run/secrets
+RUN mkdir -p /app/assets/audio/tts
 
 EXPOSE 8080
 

@@ -221,3 +221,4 @@ build/
 # Logs
 logs/
 *.log
+emotion_model/

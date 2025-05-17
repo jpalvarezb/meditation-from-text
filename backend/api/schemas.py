@@ -18,6 +18,7 @@ class MeditationRequest(BaseModel):
 
 
 class MeditationResponse(BaseModel):
+    final_signed_url: str
     final_audio_path: str
     emotion_summary: dict
     script_path: str

@@ -3,7 +3,7 @@ from openai import OpenAI
 from aeneas.task import Task
 from datetime import datetime
 from app.logger import logger
-from app.cloud_utils import upload_to_gcs
+from app.cloud_utils import upload_to_gcs, fetch_from_gcs
 from aeneas.executetask import ExecuteTask
 from config.params import TTS_DIR, OPENAI_API_KEY, IS_PROD
 
@@ -12,7 +12,7 @@ openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
 
 def generate_tts(
-    script_text: str,
+    script_path: str,
     voice: str = "sage",
     model: str = "gpt-4o-mini-tts",
 ):
@@ -20,7 +20,13 @@ def generate_tts(
     Generate TTS audio from meditation script text using Open AI's long-form model.
     Saves as a real WAV file with timestamped filename.
     """
-
+    # Read the script text from the file
+    if IS_PROD:
+        script_local = fetch_from_gcs(script_path)
+    else:
+        script_local = script_path
+    with open(script_local, "r") as f:
+        script_text = f.read()
     # Create timestamped filename
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     audio_filename = f"tts_audio_{timestamp}.wav"
@@ -69,27 +75,30 @@ def generate_tts(
 
 
 def align_audio_text(audio_path: str, text_path: str, output_json_path: str) -> str:
-    """
-    Aligns audio and text files using Aeneas and outputs a JSON sync map file.
-    Returns the path to the generated alignment JSON.
-    """
     config_string = "task_language=eng|is_text_type=plain|os_task_file_format=json"
 
     task = Task(config_string=config_string)
-    task.audio_file_path_absolute = audio_path
-    task.text_file_path_absolute = text_path
+
+    if audio_path.startswith("gs://"):
+        task.audio_file_path_absolute = fetch_from_gcs(audio_path)
+    else:
+        task.audio_file_path_absolute = audio_path
+
+    if text_path.startswith("gs://"):
+        task.text_file_path_absolute = fetch_from_gcs(text_path)
+    else:
+        task.text_file_path_absolute = text_path
+
     task.sync_map_file_path_absolute = output_json_path
 
     ExecuteTask(task).execute()
     task.output_sync_map_file()
+
     if IS_PROD:
         gcs_output = upload_to_gcs(local_path=output_json_path)
         logger.info(f"Alignment JSON uploaded to GCS: {gcs_output}")
         try:
             os.remove(output_json_path)
-            logger.debug(
-                f"Deleted local alignment JSON file after upload: {output_json_path}"
-            )
         except Exception as e:
             logger.warning(f"Failed to delete local alignment JSON: {e}")
         return gcs_output

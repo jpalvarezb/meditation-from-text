@@ -16,13 +16,12 @@ services:
     secrets:
       - GEMINI_API_KEY
       - OPENAI_API_KEY
-    #  - AWS_ACCESS_KEY_ID
-    #  - AWS_SECRET_ACCESS_KEY
+      - GOOGLE_APPLICATION_CREDENTIALS
     environment:
       - GEMINI_API_KEY_FILE=/run/secrets/GEMINI_API_KEY
       - OPENAI_API_KEY_FILE=/run/secrets/OPENAI_API_KEY
-      # - AWS_ACCESS_KEY_ID_FILE=/run/secrets/AWS_ACCESS_KEY_ID
-      # - AWS_SECRET_ACCESS_KEY_FILE=/run/secrets/AWS_SECRET_ACCESS_KEY
+      - GOOGLE_APPLICATION_CREDENTIALS_FILE=/run/secrets/GOOGLE_APPLICATION_CREDENTIALS
+      - ENV=dev
     command: uvicorn api.main:app --host 0.0.0.0 --port 8000
 
 secrets:
@@ -30,9 +29,5 @@ secrets:
     file: ./secrets/GEMINI_API_KEY
   OPENAI_API_KEY:
     file: ./secrets/OPENAI_API_KEY
-  # AWS_ACCESS_KEY_ID:
-  #   file: ./secrets/AWS_ACCESS_KEY_ID
-  # AWS_SECRET_ACCESS_KEY:
-  #   file: ./secrets/AWS_SECRET_ACCESS_KEY
-
-  # Uncomment AWS lines if you want to use AWS credentials for TTS.
+  GOOGLE_APPLICATION_CREDENTIALS:
+    file: ./secrets/minday_service_account.json

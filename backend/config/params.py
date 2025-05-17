@@ -35,6 +35,7 @@ def get_secret(key: str, default=None):
 
 
 ## Google Services
+GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 GEMINI_API_KEY = get_secret("GEMINI_API_KEY")
 GCP_PROJECT_ID = os.getenv("PROJECT_ID", "minday-project")
 GCP_AUDIO_BUCKET = os.getenv("AUDIO_BUCKET", "minday-audio")

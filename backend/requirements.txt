@@ -9,5 +9,7 @@ google-genai
 torch == 2.6.0
 transformers == 4.50.3
 pydub==0.25.1
-optimum
-onnxruntime
+optimum==1.25.0
+onnx==1.15.0
+onnxruntime==1.22.0
+google-cloud-storage==3.1.0

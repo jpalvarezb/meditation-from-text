@@ -1,9 +1,29 @@
 import os
+import json
+import tempfile
+from typing import Optional
 from app.logger import logger
+from urllib.parse import quote
 from google.cloud import storage
-from config.params import GCP_AUDIO_BUCKET, IS_PROD, AUDIO_ROOT
+from google.oauth2 import service_account
+from config.params import (
+    GCP_AUDIO_BUCKET,
+    IS_PROD,
+    AUDIO_ROOT,
+)
 
-client = storage.Client()
+if IS_PROD:
+    credentials = service_account.Credentials.from_service_account_info(
+        json.loads(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+    )
+
+    client = storage.Client(credentials=credentials)
+else:
+    credentials = service_account.Credentials.from_service_account_file(
+        os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    )
+
+    client = storage.Client(credentials=credentials)
 
 
 def upload_to_gcs(
@@ -31,7 +51,7 @@ def upload_to_gcs(
     return f"gs://{bucket_name}/{blob_path}"
 
 
-def fetch_from_gcs(gcs_path: str, local_path: str):
+def fetch_from_gcs(gcs_path: str, dest_path: Optional[str] = None) -> str:
     if not gcs_path.startswith("gs://"):
         raise ValueError("GCS path must start with 'gs://'")
 
@@ -43,9 +63,16 @@ def fetch_from_gcs(gcs_path: str, local_path: str):
     bucket = client.bucket(bucket_name)
     blob = bucket.blob(blob_path)
 
-    os.makedirs(os.path.dirname(local_path), exist_ok=True)
-    blob.download_to_filename(local_path)
-    logger.info(f"Downloaded {gcs_path} to {local_path}")
+    if dest_path is None:
+        _, ext = os.path.splitext(blob_path)
+        tmp_fd, tmp_path = tempfile.mkstemp(suffix=ext)
+        os.close(tmp_fd)
+    else:
+        tmp_path = dest_path
+
+    blob.download_to_filename(tmp_path)
+    logger.info(f"Downloaded {gcs_path} to temp file: {tmp_path}")
+    return tmp_path
 
 
 def resolve_asset(path: str) -> str:
@@ -79,3 +106,31 @@ def resolve_asset(path: str) -> str:
     blob.download_to_filename(tmp_path)
     logger.info(f"Downloaded {path} to {tmp_path}")
     return tmp_path
+
+
+def generate_signed_url(gcs_uri: str, expiration_minutes: int = 60) -> str:
+    """
+    Convert a gs://bucket/object URI into a signed HTTPS URL.
+    Only used in production to allow public access to private GCS objects.
+    """
+    if not gcs_uri.startswith("gs://"):
+        return gcs_uri
+
+    if os.getenv("ENV") != "prod":
+        return gcs_uri
+
+    parts = gcs_uri[5:].split("/", 1)
+    if len(parts) != 2:
+        raise ValueError("Invalid GCS URI format")
+
+    bucket_name, blob_name = parts
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+
+    url = blob.generate_signed_url(
+        version="v4",
+        expiration=expiration_minutes * 60,
+        method="GET",
+        response_disposition=f'inline; filename="{quote(blob_name)}"',
+    )
+    return url

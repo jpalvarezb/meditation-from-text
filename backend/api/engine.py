@@ -4,7 +4,7 @@ from app.emotion_scoring import emotion_classification
 from app.script_generator import generate_prompt, generate_meditation_script
 from app.tts_generator import generate_tts, align_audio_text
 from app.sound_engineer import sound_engineer_pipeline
-from app.cloud_utils import resolve_asset
+from app.cloud_utils import resolve_asset, generate_signed_url
 
 
 # The main function exposed to API
@@ -44,17 +44,15 @@ async def meditation_engine(
             logger.error(f"Script generation failed: {e}")
             raise
 
-        script_local = resolve_asset(script_path)
-
         logger.info("Generating TTS audio...")
-        tts_path = generate_tts(script_local)
+        tts_path = generate_tts(script_path)
         logger.info(f"TTS audio saved at: {tts_path}")
 
         tts_local = resolve_asset(tts_path)
 
         logger.info("Aligning audio and text...")
         alignment_local = tts_local.replace(".wav", ".json")
-        alignment_path = align_audio_text(tts_local, script_local, alignment_local)
+        alignment_path = align_audio_text(tts_local, script_path, alignment_local)
         logger.info(f"Alignment JSON saved at: {alignment_path}")
 
         logger.info("Sound engineering final meditation...")
@@ -65,10 +63,16 @@ async def meditation_engine(
             emotion_summary=emotion_summary,
             output_filename=output_filename,
         )
-        logger.info(f"Final mix saved at: {final_mix_path}")
+        final_signed_url = None
+        if final_mix_path.startswith("gs://"):
+            final_signed_url = generate_signed_url(final_mix_path)
+            logger.info(f"Final mix saved at: {final_mix_path}")
         logger.info("Medition generation pipeline finished successfully.")
-
         return {
+            "final_signed_url": final_signed_url
+            if final_signed_url
+            else "Development mode",
+            # If not in production, return local path
             "final_audio_path": final_mix_path,
             "emotion_summary": emotion_summary,
             "script_path": script_path,

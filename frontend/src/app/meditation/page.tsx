@@ -24,7 +24,7 @@ useEffect(() => {
       const duration_minutes = parseInt(sessionStorage.getItem('duration') || '5', 10);
       const meditation_type = sessionStorage.getItem('meditation_type') || 'self-love';
 
-      const response = await fetch('http://localhost:8000/meditate', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/meditate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ journal_entry, duration_minutes, meditation_type }),
@@ -33,9 +33,15 @@ useEffect(() => {
       if (!response.ok) throw new Error('Meditation generation failed');
 
       const data = await response.json();
-      const fullPath = data.final_audio_path;
-      const filename = fullPath?.split('/output/').pop();
-      if (filename) setAudioPath(`/output/${filename}`);
+      const cloudUrl = data.final_signed_url;
+      const localPath = data.final_audio_path;
+
+      if (cloudUrl?.startsWith('https://')) {
+        setAudioPath(cloudUrl);
+      } else {
+        setAudioPath(`/output/${localPath?.split('/output/').pop()}`); // Local file path
+      }
+
     } catch (err) {
       console.error('Failed to fetch meditation:', err);
     }
