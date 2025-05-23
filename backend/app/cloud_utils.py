@@ -9,21 +9,24 @@ from google.oauth2 import service_account
 from config.params import (
     GCP_AUDIO_BUCKET,
     IS_PROD,
+    IS_LOCAL_TEST,
     AUDIO_ROOT,
 )
 
-if IS_PROD:
+if IS_PROD and not IS_LOCAL_TEST:
     credentials = service_account.Credentials.from_service_account_info(
         json.loads(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
     )
 
     client = storage.Client(credentials=credentials)
-else:
+elif IS_PROD and IS_LOCAL_TEST:
     credentials = service_account.Credentials.from_service_account_file(
         os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
     )
 
     client = storage.Client(credentials=credentials)
+else:
+    client = storage.Client()
 
 
 def upload_to_gcs(
@@ -134,3 +137,27 @@ def generate_signed_url(gcs_uri: str, expiration_minutes: int = 60) -> str:
         response_disposition=f'inline; filename="{quote(blob_name)}"',
     )
     return url
+
+
+def clean_up_tmp_folder():
+    tmp_dir = tempfile.gettempdir()
+    if IS_PROD and not IS_LOCAL_TEST and not tmp_dir.startswith("/tmp"):
+        logger.warning(f"Aborting cleanup – unsafe temp path: {tmp_dir}")
+        return
+    try:
+        deleted_count = 0
+        for root, dirs, files in os.walk(tmp_dir, topdown=False):
+            for file in files:
+                try:
+                    os.remove(os.path.join(root, file))
+                    deleted_count += 1
+                except Exception as e:
+                    logger.warning(f"Failed to delete file: {file} – {e}")
+            for dir in dirs:
+                try:
+                    os.rmdir(os.path.join(root, dir))
+                except Exception as e:
+                    logger.warning(f"Failed to delete directory: {dir} – {e}")
+        logger.debug(f"Temporary folder cleaned, {deleted_count} files deleted.")
+    except Exception as e:
+        logger.warning(f"Failed to list tmp directory contents: {e}")

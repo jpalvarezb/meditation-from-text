@@ -15,7 +15,7 @@ from app.audio_utils import (
     next_bar_chime,
     extract_word_timings_from_fragments,
     build_outro_segment,
-    load_audio_asset,
+    load_and_clean_audio_asset,
 )
 from config.params import OUTPUT_DIR, IS_PROD
 
@@ -33,17 +33,17 @@ def sound_engineer_pipeline(
     # 1) Choose assets & load files
     chosen = choose_assets(emotion_summary)
     amb = normalize_volume(
-        load_audio_asset(os.path.join("soundscapes", chosen["ambient"])),
+        load_and_clean_audio_asset(os.path.join("soundscapes", chosen["ambient"])),
         target_dBFS=chosen.get("ambient_volume_dBFS", -32.0),
     )
     tone = normalize_volume(
-        load_audio_asset(os.path.join("tones", chosen["tone"])),
+        load_and_clean_audio_asset(os.path.join("tones", chosen["tone"])),
         target_dBFS=chosen.get("tone_volume_dBFS", -36.0),
     )
-    start_chime = load_audio_asset(
+    start_chime = load_and_clean_audio_asset(
         os.path.join("chimes", chosen.get("start_chime", "start_chime_paiste_gong.wav"))
     )
-    end_chime = load_audio_asset(
+    end_chime = load_and_clean_audio_asset(
         os.path.join("chimes", chosen.get("end_chime", "end_chime_singing_bowl.wav"))
     )
 
@@ -59,7 +59,7 @@ def sound_engineer_pipeline(
     bg_loop = amb_rest.overlay(tone_rest, loop=True)
 
     # 4) Load & soften TTS
-    raw_tts = raw_tts = AudioSegment.from_file(resolve_asset(tts_path))
+    raw_tts = AudioSegment.from_file(resolve_asset(tts_path))
     softened = soften_voice(raw_tts)
     alignment_local = resolve_asset(alignment_json_path)
     with open(alignment_local) as f:

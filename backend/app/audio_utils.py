@@ -108,27 +108,34 @@ def build_outro_segment(
     return bg_tail_faded.overlay(chime)
 
 
-def load_audio_asset(rel_path: str) -> AudioSegment:
+def load_and_clean_audio_asset(rel_path: str) -> AudioSegment:
     """
-    Loads an audio file either from local disk or from GCS into a Pydub AudioSegment.
-    `rel_path` may be absolute or relative under AUDIO_ROOT; the same sub-folder
-    structure is used in the bucket.
+    Loads an audio file from local or GCS, deletes the file and cleans up its empty parent dirs in prod.
     """
-    # Always compute the path relative to AUDIO_ROOT
     full_path = os.path.normpath(os.path.join(AUDIO_ROOT, rel_path))
     rel_path = os.path.relpath(full_path, AUDIO_ROOT)
 
-    # 2. In prod, fetch from GCS under the same sub-path
     if IS_PROD:
-        # convert OS separators to forward slashes for GCS
         bucket_subpath = rel_path.replace(os.sep, "/")
         gcs_path = f"gs://{GCP_AUDIO_BUCKET}/{bucket_subpath}"
         tmp_path = os.path.join("/tmp", rel_path)
         os.makedirs(os.path.dirname(tmp_path), exist_ok=True)
         fetch_from_gcs(gcs_path, tmp_path)
-        return AudioSegment.from_file(tmp_path)
+        audio = AudioSegment.from_file(tmp_path)
+        try:
+            os.remove(tmp_path)
+            # Recursively remove empty parent dirs up to /tmp
+            dir_path = os.path.dirname(tmp_path)
+            while dir_path != "/tmp":
+                try:
+                    os.rmdir(dir_path)
+                    dir_path = os.path.dirname(dir_path)
+                except OSError:
+                    break
+        except Exception:
+            pass
+        return audio
 
-    # 3. In dev, load directly from local AUDIO_ROOT
     local_path = os.path.join(AUDIO_ROOT, rel_path)
     return AudioSegment.from_file(local_path)
 
@@ -169,4 +176,4 @@ def next_bar_chime(chosen_interchime_folder: str) -> AudioSegment:
     # Pop the next chime filename and load
     filename = _chime_rotation.pop(0)
     rel_audio = f"chimes/{chosen_interchime_folder}/{filename}"
-    return load_audio_asset(rel_audio)
+    return load_and_clean_audio_asset(rel_audio)

@@ -4,7 +4,11 @@ from app.emotion_scoring import emotion_classification
 from app.script_generator import generate_prompt, generate_meditation_script
 from app.tts_generator import generate_tts, align_audio_text
 from app.sound_engineer import sound_engineer_pipeline
-from app.cloud_utils import resolve_asset, generate_signed_url
+from app.cloud_utils import (
+    resolve_asset,
+    generate_signed_url,
+    clean_up_tmp_folder,
+)
 
 
 # The main function exposed to API
@@ -68,6 +72,8 @@ async def meditation_engine(
             final_signed_url = generate_signed_url(final_mix_path)
             logger.info(f"Final mix saved at: {final_mix_path}")
         logger.info("Medition generation pipeline finished successfully.")
+        # Clean Up local files
+        clean_up_tmp_folder()
         return {
             "final_signed_url": final_signed_url
             if final_signed_url

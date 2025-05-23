@@ -39,21 +39,16 @@ def generate_tts(
         input=script_text,
         model=model,
         voice=voice,
+        speed=0.96,
         instructions=""""
-    Accent:
-    Use a soft, neutral British accent with no regional inflection.
-    Emotional range:
-    Keep the emotional expression subtle and steady, avoiding strong emotional peaks.
-    Intonation
-    Use gentle, downward-sloping intonation to convey peace and reassurance.
-    Impressions
-    Avoid character impressions; speak authentically and naturally.
-    Speed of speech:
-    Speak as slowly and evenly as possible. Ensure you take substantial pauses, allowing the listener space to breathe and reflect.
-    Tone:
-    Use a warm, nurturing tone, as if calmly guiding someone to inner stillness.
-    Whispering:
-    Do not whisper, but keep the voice soft and close, like a gentle spoken lullaby.
+        Voice: Use a soft, neutral British accent with no regional inflection.
+
+        Tone: Peaceful. Keep the emotional expression subtle and steady, avoiding strong emotional peaks.
+
+        Delivery: Calm, slow, and collected. Speak as slowly and evenly as possible. Ensure you take substantial pauses,
+        allowing the listener space to breathe and reflect.
+
+        Pronunciation: Do not whisper, but keep the voice soft and close, like a gentle spoken lullaby.
     """,
         response_format="wav",
     ) as response:

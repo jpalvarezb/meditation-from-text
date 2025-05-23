@@ -3,12 +3,15 @@ import os
 ## Production // Development
 LOG_LEVEL = "DEBUG"  # "INFO" or "DEBUG"
 ENV = os.getenv("ENV", "local")  # fallback to local if not set
+LOCAL_TEST = os.getenv("LOCAL_TEST", "false")
+IS_LOCAL_TEST = LOCAL_TEST.lower() == "true"
 IS_PROD = ENV == "prod"
 
 # Local Directories
 BASE_ROOT = os.path.dirname(os.path.dirname(__file__))
 ASSET_ROOT = os.path.join(BASE_ROOT, "assets")
 AUDIO_ROOT = os.path.join(ASSET_ROOT, "audio")
+CACHE_DIR = "/tmp/meditation_cache" if IS_PROD else os.path.join(ASSET_ROOT, "cache")
 # Audio Directories
 SOUNDSCAPES_DIR = os.path.join(AUDIO_ROOT, "soundscapes")
 CHIMES_DIR = os.path.join(AUDIO_ROOT, "chimes")

@@ -192,13 +192,13 @@ async def generate_meditation_script(
             word_count = len(script.split())
             if length_threshold(time, word_count):
                 logger.info(
-                    f"Script passed {word_count} words threshold check after {loops}/{max_loops} refinement loops."
+                    f"Script passed with {word_count} words check after {loops}/{max_loops} refinement loops."
                 )
                 succeeded = True
                 break
 
             logger.info(
-                f"Script failed {word_count} words threshold check after {loops + 1}/{max_loops} refinement loops. Restarting full generation..."
+                f"Script failed with {word_count} words after {loops + 1}/{max_loops} refinement loops. Restarting full generation..."
             )
             loops += 1
             await asyncio.sleep(2**attempt)
@@ -220,7 +220,7 @@ async def generate_meditation_script(
         logger.error(
             f"Exceeded maximum retries ({max_total_retries}). Meditation generation failed."
         )
-        raise RuntimeError("Meditation generation failed.")
+        raise ValueError("threshold_unmet")
 
     # Save the final script
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")

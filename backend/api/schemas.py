@@ -24,3 +24,13 @@ class MeditationResponse(BaseModel):
     script_path: str
     tts_path: str
     alignment_path: str
+
+
+class FeedbackRequest(BaseModel):
+    star_rating: int
+    feedback_text: str
+
+
+class FeedbackResponse(BaseModel):
+    message: str
+    status: str
