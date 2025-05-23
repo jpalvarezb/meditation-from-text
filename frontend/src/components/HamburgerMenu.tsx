@@ -43,12 +43,31 @@ export default function HamburgerMenu() {
           color: '#000',
         }}
       >
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0, lineHeight: '2.5rem' }}>
-          <li><Link href="/" style={{ color: '#000', textDecoration: 'none' }}>Home</Link></li>
-          <li><a href="#" style={{ color: '#000', textDecoration: 'none' }}>Journal Log</a></li>
-          <li><a href="#" style={{ color: '#000', textDecoration: 'none' }}>Profile</a></li>
-          <li><a href="#" style={{ color: '#000', textDecoration: 'none' }}>Subscription</a></li>
-          <li><a href="#" style={{ color: '#000', textDecoration: 'none' }}>Settings</a></li>
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0, lineHeight: '4rem' }}>
+<li>
+  <Link
+    href="/"
+    style={{
+      color: '#000',
+      textDecoration: 'none',
+      fontSize: '1.4rem'    // ← bump this up as you like
+    }}
+  >
+    Home
+  </Link>
+</li>
+<li>
+  <Link
+    href="/feedback"
+    style={{
+      color: '#000',
+      textDecoration: 'none',
+      fontSize: '1.4rem'
+    }}
+  >
+    Feedback
+  </Link>
+</li>
         </ul>
       </nav>
     </>

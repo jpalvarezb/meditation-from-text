@@ -34,8 +34,8 @@ function AnimatedOrb({
     }
     // ambient distortion pulse
     if (materialRef.current) {
-      const base = distortion ?? 0.2;
-      const spike = distortion ? distortion + 0.2 : 0.4;
+      const base = distortion ?? 0.15;
+      const spike = distortion ? distortion + 0.1 : 0.25;
       const targetDistort = tapped ? spike : base;
       materialRef.current.distort += (targetDistort - materialRef.current.distort) * 0.075;
     }
@@ -55,7 +55,7 @@ function AnimatedOrb({
 
   return (
     <group ref={groupRef} scale={[1, 1, 1]}>
-      <Sphere ref={meshRef} args={[1.5, 64, 64]} onPointerDown={(e) => { e.stopPropagation(); onSphereClick(); }}>
+      <Sphere ref={meshRef} args={[1.7, 64, 64]} onPointerDown={(e) => { e.stopPropagation(); onSphereClick(); }}>
         <MeshDistortMaterial
           ref={materialRef}
           color="#FFD700"
@@ -106,30 +106,28 @@ export default function Orb({
     }
   }, [triggerReverse]);
 
-  const containerStyle: CSSProperties = transitioning || reversing
-    ? {
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        touchAction: 'manipulation',
-        backgroundColor: '#F9E66B',
-        zIndex: 999,
-      }
-    : {
-        width: '100vw',
-        height: '100vh',
-        display: 'flex',
-        justifyContent: 'center',
-        touchAction: 'manipulation',
-      };
-
-  const canvasStyle: CSSProperties = { width: '100%', height: '100%' };
-
+const containerStyle: CSSProperties = {
+  padding: '0vh',
+  boxSizing: 'border-box',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  touchAction: 'manipulation',
+  width: '100%',
+  maxWidth: '100vw',
+  height: '100%',
+  maxHeight: '100vh',
+  overflow: 'hidden',
+  position: transitioning || reversing ? 'fixed' : 'relative',
+  top: 0,
+  left: 0,
+  zIndex: transitioning || reversing ? 999 : undefined,
+  backgroundColor: transitioning || reversing ? '#F9E66B' : undefined,
+};
+const canvasStyle: CSSProperties = {
+  width: 'clamp(300px, 97vmin, 600px)',
+  height: 'clamp(300px, 97vmin, 600px)',
+};
   return (
     <div
       onClick={() => {
@@ -138,7 +136,7 @@ export default function Orb({
       }}
       style={containerStyle}
     >
-      <Canvas style={canvasStyle} camera={{ position: [0, 0, 4] }}>
+      <Canvas style={canvasStyle} camera={{ position: [0, 0, 3] }}>
         <ambientLight intensity={1.5} />
         <directionalLight intensity={4.0} position={[4, 7, 7]} />
         <Suspense fallback={null}>

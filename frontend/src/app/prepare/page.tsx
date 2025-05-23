@@ -60,7 +60,7 @@ export default function PreparePage() {
           fontFamily: "'Cutive Mono', monospace",
           fontSize: '1.25rem',
           fontWeight: 'lighter',
-          color: '#B0B0B0',
+          color: '#3A53F7',
           marginBottom: '3rem',
         }}
       >
@@ -81,10 +81,10 @@ export default function PreparePage() {
             color: '#333',
           }}
         >
-          <option value="1">3</option>
-          <option value="3">5</option>
-          <option value="8">10</option>
-          <option value="13">15</option>
+          <option value="1">1</option>
+          <option value="3">3</option>
+          <option value="5">5</option>
+          <option value="10">10</option>
         </select>{' '}
         minute{' '}
         <select

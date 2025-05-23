@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Orb from '@/components/Orb';
 import { Pause } from 'lucide-react';
 import HamburgerMenu from '@/components/HamburgerMenu';
+import dynamic from 'next/dynamic';
+const Orb = dynamic(() => import('@/components/Orb'), { ssr: false });
 
 export default function LoadingPage() {
   const [loading, setLoading] = useState(true);
@@ -14,38 +15,54 @@ export default function LoadingPage() {
   const [meditationEnded, setMeditationEnded] = useState(false);
   const [audioPath, setAudioPath] = useState<string | null>(null);
   const didRun = useRef(false);
+  const retryingRef = useRef(false);  // retry lock
 useEffect(() => {
   if (didRun.current) return;
   didRun.current = true;
 
   const fetchMeditation = async () => {
-    try {
-      const journal_entry = sessionStorage.getItem('journal_entry') || '';
-      const duration_minutes = parseInt(sessionStorage.getItem('duration') || '5', 10);
-      const meditation_type = sessionStorage.getItem('meditation_type') || 'self-love';
+  if (retryingRef.current) return;
+  retryingRef.current = true;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/meditate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ journal_entry, duration_minutes, meditation_type }),
-      });
+  try {
+    const journal_entry = sessionStorage.getItem('journal_entry') || '';
+    const duration_minutes = parseInt(sessionStorage.getItem('duration') || '5', 10);
+    const meditation_type = sessionStorage.getItem('meditation_type') || 'self-love';
 
-      if (!response.ok) throw new Error('Meditation generation failed');
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/meditate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ journal_entry, duration_minutes, meditation_type }),
+    });
 
-      const data = await response.json();
-      const cloudUrl = data.final_signed_url;
-      const localPath = data.final_audio_path;
+    const data = await response.json();
 
-      if (cloudUrl?.startsWith('https://')) {
-        setAudioPath(cloudUrl);
-      } else {
-        setAudioPath(`/output/${localPath?.split('/output/').pop()}`); // Local file path
+    if (!response.ok) throw new Error('Meditation generation failed');
+
+    if (data.status === 'error' && data.reason === 'unmet_threshold') {
+      const retry = confirm("Patience is a virtue. Please try again.");
+      if (retry) {
+        retryingRef.current = false;
+        return fetchMeditation();
       }
-
-    } catch (err) {
-      console.error('Failed to fetch meditation:', err);
+      return;
     }
-  };
+
+    const cloudUrl = data.final_signed_url;
+    const localPath = data.final_audio_path;
+
+    if (cloudUrl?.startsWith('https://')) {
+      setAudioPath(cloudUrl);
+    } else {
+      setAudioPath(`/output/${localPath?.split('/output/').pop()}`);
+    }
+
+  } catch (err) {
+    console.error('Failed to fetch meditation:', err);
+  } finally {
+    retryingRef.current = false;
+  }
+};
 
   fetchMeditation();
 }, []);
@@ -172,19 +189,19 @@ useEffect(() => {
         <p
           style={{
             position: 'absolute',
-            bottom: '20px',
+            bottom: '16vh',
             width: '100%',
             textAlign: 'center',
             color: '#3A53F7',
             fontFamily: 'Helvetica, sans-serif',
-            fontSize: '1.1rem',
+            fontSize: '1.5rem',
             fontWeight: 'lighter',
             margin: 0,
             pointerEvents: 'none',
           }}
         >
           {showControls
-            ? 'Wherever you are, be there totally.'
+            ? 'Wherever you are, totally be there.'
             : 'You may start making yourself comfortable.'}
         </p>
       )}
@@ -204,7 +221,7 @@ useEffect(() => {
             gap: '3rem',
           }}
         >
-          <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" onClick={handleRestart} style={{ cursor: 'pointer' }}>
             <rect x="6" y="8" width="3" height="20" fill="black" rx="1"/>
             <path d="M27 9C27 8.44772 26.5523 8 26 8C25.8257 8 25.6554 8.04878 25.5 8.14038L9.5 18.1404C9.19002 18.3164 9 18.6454 9 19C9 19.3546 9.19002 19.6836 9.5 19.8596L25.5 29.8596C25.6554 29.9512 25.8257 30 26 30C26.5523 30 27 29.5523 27 29V9Z" fill="black"/>
           </svg>
@@ -245,7 +262,11 @@ useEffect(() => {
               </svg>
             )}
           </div>
-          <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" onClick={() => {
+            setMeditationEnded(true);
+            setShowControls(false);
+            setIsPlaying(false);
+          }} style={{ cursor: 'pointer' }}>
             <rect x="27" y="8" width="3" height="20" fill="black" rx="1"/>
             <path d="M9 27C9 27.5523 9.44772 28 10 28C10.1743 28 10.3446 27.9512 10.5 27.8596L26.5 17.8596C26.81 17.6836 27 17.3546 27 17C27 16.6454 26.81 16.3164 26.5 16.1404L10.5 6.14038C10.3446 6.04878 10.1743 6 10 6C9.44772 6 9 6.44772 9 7V27Z" fill="black"/>
           </svg>
