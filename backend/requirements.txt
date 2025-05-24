@@ -6,7 +6,7 @@ python-dotenv
 boto3
 google-genai
 # aeneas==1.7.3.0
-torch == 2.6.0
+torch ==2.3.1+cpu
 transformers == 4.50.3
 pydub==0.25.1
 optimum==1.25.0

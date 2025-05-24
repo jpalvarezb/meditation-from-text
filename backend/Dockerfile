@@ -27,7 +27,7 @@ RUN pip install --no-cache-dir --no-build-isolation aeneas==1.7.3.0
 
 # Copy requirements and install remaining packages
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt -f https://download.pytorch.org/whl/torch_stable.html
 
 # Copy your actual application code
 COPY app ./app

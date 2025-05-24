@@ -113,10 +113,8 @@ const containerStyle: CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   touchAction: 'manipulation',
-  width: '100%',
-  maxWidth: '100vw',
-  height: '100%',
-  maxHeight: '100vh',
+  width: '100vw',
+  height: '100vh',
   overflow: 'hidden',
   position: transitioning || reversing ? 'fixed' : 'relative',
   top: 0,
@@ -125,8 +123,10 @@ const containerStyle: CSSProperties = {
   backgroundColor: transitioning || reversing ? '#F9E66B' : undefined,
 };
 const canvasStyle: CSSProperties = {
-  width: 'clamp(300px, 97vmin, 600px)',
-  height: 'clamp(300px, 97vmin, 600px)',
+  width: '80vmin',
+  height: '80vmin',
+  maxWidth: '90vw',
+  maxHeight: '90vh',
 };
   return (
     <div

@@ -1,5 +1,6 @@
 'use client';
 
+import Head from 'next/head';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
@@ -40,6 +41,12 @@ export default function PreparePage() {
         fontFamily: 'Helvetica, sans-serif',
       }}
     >
+      <Head>
+        <title>Minday Session Creation – Tailor-Made Meditations</title>
+        <meta name="description" content="Choose your meditation type and duration. Minday lets you create personalized sessions from your own reflections." />
+        <meta property="og:title" content="Minday Session Creation – Tailor-Made Meditations" />
+        <meta property="og:description" content="Choose your meditation type and duration. Minday lets you create personalized sessions from your own reflections." />
+      </Head>
       <button
         onClick={() => (window.history.back())}
         style={{

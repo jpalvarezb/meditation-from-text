@@ -1,7 +1,8 @@
 'use client';
 
-import HamburgerMenu from '@/components/HamburgerMenu';
+import Head from 'next/head';
 import dynamic from 'next/dynamic';
+import HamburgerMenu from '@/components/HamburgerMenu';
 const Orb = dynamic(() => import('@/components/Orb'), { ssr: false });
 
 export default function HomePage() {
@@ -20,6 +21,13 @@ export default function HomePage() {
         overflow: 'hidden',
       }}
     >
+      <Head>
+        <title>Minday – Personalized AI Meditations</title>
+        <meta name="description" content="Create tailor made experiences from your day-to-day life. Minday is your private meditation guide." />
+        <meta property="og:title" content="Minday – AI Personalized Meditations" />
+        <meta property="og:description" content="Create tailor made experiences from your day-to-day life. Minday is your private meditation guide." />
+      </Head>
+
       <HamburgerMenu />
 
       {/* Overlay text */}

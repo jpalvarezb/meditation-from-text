@@ -1,5 +1,6 @@
 'use client';
 
+import Head from 'next/head';
 import React, { useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -26,6 +27,13 @@ export default function JournalEntry() {
         alignItems: 'center',
       }}
     >
+      <Head>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Minday Journal – Tailor Your Meditation</title>
+        <meta name="description" content="Write freely about your day or feelings. Minday uses your reflections to generate a personalized meditation experience. Your thoughts stay private." />
+        <meta property="og:title" content="Minday – AI Personalized Meditations" />
+        <meta property="og:description" content="Create tailor made experiences from your day-to-day life. Minday is your private meditation guide." />
+      </Head>
       <button
         onClick={() => (window.location.href = '/')}
         style={{

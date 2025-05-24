@@ -11,6 +11,7 @@ export default function HamburgerMenu() {
     <>
       {/* Hamburger button */}
       <button
+        aria-label="Open navigation menu"
         onClick={() => setMenuOpen(!menuOpen)}
         style={{
           position: 'absolute',

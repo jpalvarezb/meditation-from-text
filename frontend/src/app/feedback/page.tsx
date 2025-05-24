@@ -1,5 +1,6 @@
 'use client';
 
+import Head from 'next/head';
 import React, { useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 
@@ -47,6 +48,12 @@ export default function FeedbackEntry() {
         alignItems: 'center',
       }}
     >
+      <Head>
+        <title>Minday – Experience Feedback</title>
+        <meta name="description" content="Share your experience using Minday and help us improve your meditation journey." />
+        <meta property="og:title" content="Minday – Feedback" />
+        <meta property="og:description" content="Share your experience using Minday and help us improve your meditation journey." />
+      </Head>
       <button
         onClick={() => (window.location.href = '/')}
         style={{

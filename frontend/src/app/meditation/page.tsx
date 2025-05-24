@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Head from 'next/head';
 import { Pause } from 'lucide-react';
 import HamburgerMenu from '@/components/HamburgerMenu';
 import dynamic from 'next/dynamic';
@@ -9,7 +10,7 @@ const Orb = dynamic(() => import('@/components/Orb'), { ssr: false });
 export default function LoadingPage() {
   const [loading, setLoading] = useState(true);
   const [playVisible, setPlayVisible] = useState(false);
-  const [distortion, setDistortion] = useState(0.5); // exaggerated during loading
+  const [distortion, setDistortion] = useState(0.3); // exaggerated during loading
   const [isPlaying, setIsPlaying] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [meditationEnded, setMeditationEnded] = useState(false);
@@ -31,7 +32,9 @@ useEffect(() => {
 
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/meditate`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json',
+                 'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',
+      },
       body: JSON.stringify({ journal_entry, duration_minutes, meditation_type }),
     });
 
@@ -120,20 +123,27 @@ useEffect(() => {
   };
 
   return (
-    <main
-      style={{
-        width: '100vw',
-        height: '100vh',
-        backgroundColor: '#FDFBEF',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        flexDirection: 'column',
-        fontFamily: "'Cutive Mono', monospace",
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
+    <>
+      <Head>
+        <title>Minday Meditation – Personalized Session</title>
+        <meta name="description" content="Listen to your guided meditation crafted from your personal experience. Relax and reconnect with your thoughts through a unique session." />
+        <meta property="og:title" content="Minday Meditation – Personalized Session" />
+        <meta property="og:description" content="Listen to your guided meditation crafted from your personal experience. Relax and reconnect with your thoughts through a unique session." />
+      </Head>
+      <main
+        style={{
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: '#FDFBEF',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          flexDirection: 'column',
+          fontFamily: "'Cutive Mono', monospace",
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
       {loading && (
       <div
       style={{
@@ -159,8 +169,9 @@ useEffect(() => {
         style={{
           position: 'relative',
           cursor: !showControls ? 'pointer' : 'default',
-          width: '100%',
-          height: 'auto',
+          width: 'clamp(280px, 90vmin, 600px)',
+          height: 'clamp(280px, 90vmin, 600px)',
+          overflow: 'hidden',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
@@ -186,24 +197,13 @@ useEffect(() => {
         )}
       </div>
       {!meditationEnded && (
-        <p
-          style={{
-            position: 'absolute',
-            bottom: '16vh',
-            width: '100%',
-            textAlign: 'center',
-            color: '#3A53F7',
-            fontFamily: 'Helvetica, sans-serif',
-            fontSize: '1.5rem',
-            fontWeight: 'lighter',
-            margin: 0,
-            pointerEvents: 'none',
-          }}
-        >
-          {showControls
-            ? 'Wherever you are, totally be there.'
-            : 'You may start making yourself comfortable.'}
-        </p>
+        <div className="quote-container">
+          <p className="quote-text">
+            {showControls
+              ? 'Wherever you are, totally be there.'
+              : 'You may start making yourself comfortable.'}
+          </p>
+        </div>
       )}
       <HamburgerMenu />
 
@@ -310,6 +310,35 @@ useEffect(() => {
           </button>
         </>
       )}
-    </main>
+      <style jsx>{`
+        .quote-container {
+          position: absolute;
+          left: 0;
+          right: 0;
+          padding-inline: 1.5vw;
+          box-sizing: border-box;
+          pointer-events: none;
+        }
+        .quote-text {
+          text-align: center;
+          color: #3A53F7;
+          font-family: Helvetica, sans-serif;
+          font-size: 1.4rem;
+          font-weight: lighter;
+          margin: 0;
+          pointer-events: none;
+        }
+        @media (max-width: 600px) {
+          .quote-container { bottom: 12vh; }
+        }
+        @media (min-width: 601px) and (max-width: 1200px) {
+          .quote-container { bottom: 10vh; }
+        }
+        @media (min-width: 1201px) {
+          .quote-container { bottom: 6vh; }
+        }
+      `}</style>
+      </main>
+    </>
   );
 }

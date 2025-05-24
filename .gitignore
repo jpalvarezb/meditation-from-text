@@ -222,3 +222,4 @@ build/
 logs/
 *.log
 emotion_model/
+.firebase/
