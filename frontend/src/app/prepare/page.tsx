@@ -4,6 +4,9 @@ import Head from 'next/head';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { supabase } from '@/lib/supabaseClient';
+
 
 
 export default function PreparePage() {
@@ -11,21 +14,46 @@ export default function PreparePage() {
   const [type, setType] = useState('morning');
   const router = useRouter();
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const journal_entry = sessionStorage.getItem('journal_entry');
-
     if (!journal_entry) {
       alert("Missing journal entry. Please return and enter your thoughts.");
       return;
     }
-
-    sessionStorage.setItem('journal_entry', journal_entry);
+    // Persist selections for potential UI use
     sessionStorage.setItem('duration', duration);
     sessionStorage.setItem('meditation_type', type);
+
+    // Get supabase session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      // Find the record just inserted from the journal page
+      const { data: inputs, error: fetchError } = await supabase
+        .from('user_input')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .eq('entry', journal_entry)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (fetchError || !inputs || inputs.length === 0) {
+        console.error('Could not find user_input row:', fetchError);
+      } else {
+        const recordId = inputs[0].id;
+        // Update with minutes and meditation type
+        const { error: updateError } = await supabase
+          .from('user_input')
+          .update({ minutes: parseInt(duration, 10), meditation_type: type })
+          .eq('id', recordId);
+        if (updateError) console.error('Failed to update input row:', updateError);
+      }
+    }
+
     router.push('/meditation');
   };
 
   return (
+    <ProtectedRoute>
     <main
       style={{
         backgroundColor: '#F9E66B',
@@ -62,17 +90,6 @@ export default function PreparePage() {
       >
       <ChevronLeft size={24} color="#3A53F7" />
       </button>
-      <h2
-        style={{
-          fontFamily: "'Cutive Mono', monospace",
-          fontSize: '1.25rem',
-          fontWeight: 'lighter',
-          color: '#3A53F7',
-          marginBottom: '3rem',
-        }}
-      >
-        Your experience is almost ready:
-      </h2>
       <p style={{ fontSize: '1.5rem', marginBottom: '2rem', color: '#333' }}>
         I’d like a{' '}
         <select
@@ -91,7 +108,7 @@ export default function PreparePage() {
           <option value="1">1</option>
           <option value="3">3</option>
           <option value="5">5</option>
-          <option value="10">10</option>
+          <option value="10">7</option>
         </select>{' '}
         minute{' '}
         <select
@@ -151,5 +168,6 @@ export default function PreparePage() {
         </button>
       </div>
     </main>
+    </ProtectedRoute>
   );
 }

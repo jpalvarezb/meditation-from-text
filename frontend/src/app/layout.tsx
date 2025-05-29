@@ -1,7 +1,8 @@
-// /src/app/layout.tsx
 import './globals.css';
 import React from 'react';
 import { Cutive_Mono } from 'next/font/google';
+import { SupabaseProvider } from '@/providers/SupabaseProvider';
+
 
 const cutiveMono = Cutive_Mono({
   subsets: ['latin'],
@@ -24,7 +25,9 @@ export default function RootLayout({
       <head>
         <link rel="icon" type="image/png" href="/favicon.png" />
       </head>
-      <body className={cutiveMono.className}>{children}</body>
+      <body className={cutiveMono.className}>
+        <SupabaseProvider>{children}</SupabaseProvider>
+      </body>
     </html>
   );
 }

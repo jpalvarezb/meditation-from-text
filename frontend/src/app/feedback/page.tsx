@@ -3,6 +3,8 @@
 import Head from 'next/head';
 import React, { useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
+import ProtectedRoute from '@/components/ProtectedRoute';
+
 
 
 export default function FeedbackEntry() {
@@ -37,6 +39,7 @@ export default function FeedbackEntry() {
 };
 
   return (
+    <ProtectedRoute>
     <main
       style={{
         backgroundColor: '#F9E66B',
@@ -160,5 +163,6 @@ export default function FeedbackEntry() {
 </div>
       </div>
     </main>
+    </ProtectedRoute>
   );
 }

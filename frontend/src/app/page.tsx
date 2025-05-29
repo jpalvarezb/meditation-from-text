@@ -3,10 +3,12 @@
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
 import HamburgerMenu from '@/components/HamburgerMenu';
+import ProtectedRoute from '@/components/ProtectedRoute';
 const Orb = dynamic(() => import('@/components/Orb'), { ssr: false });
 
 export default function HomePage() {
   return (
+    <ProtectedRoute>
     <main
       style={{
         position: 'relative',
@@ -85,5 +87,6 @@ export default function HomePage() {
         }
       `}</style>
     </main>
+    </ProtectedRoute>
   );
 }

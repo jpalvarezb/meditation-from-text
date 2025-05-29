@@ -5,7 +5,10 @@ import Head from 'next/head';
 import { Pause } from 'lucide-react';
 import HamburgerMenu from '@/components/HamburgerMenu';
 import dynamic from 'next/dynamic';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { supabase } from '@/lib/supabaseClient';
 const Orb = dynamic(() => import('@/components/Orb'), { ssr: false });
+
 
 export default function LoadingPage() {
   const [loading, setLoading] = useState(true);
@@ -37,12 +40,21 @@ useEffect(() => {
       },
       body: JSON.stringify({ journal_entry, duration_minutes, meditation_type }),
     });
+    console.log("response.ok:", response.ok);
+    console.log("status code:", response.status);
+    console.log("raw response:", await response.clone().text());
 
     const data = await response.json();
+    console.log("parsed data:", data);
+
+
+    if (!data.final_signed_url && !data.final_audio_path) {
+      throw new Error("No valid audio URL returned");
+    }
 
     if (!response.ok) throw new Error('Meditation generation failed');
 
-    if (data.status === 'error' && data.reason === 'unmet_threshold') {
+    if (data.status === 'error' && data.reason === 'threshold_unmet') {
       const retry = confirm("Patience is a virtue. Please try again.");
       if (retry) {
         retryingRef.current = false;
@@ -60,6 +72,39 @@ useEffect(() => {
       setAudioPath(`/output/${localPath?.split('/output/').pop()}`);
     }
 
+    // Persist storage info for this meditation session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      // Find the matching user_input record
+      const { data: inputs, error: inputsError } = await supabase
+        .from('user_input')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .eq('entry', journal_entry)
+        .eq('minutes', duration_minutes)
+        .eq('meditation_type', meditation_type)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const inputId = inputs?.[0]?.id;
+      if (inputId) {
+        const { error: insertError } = await supabase
+          .from('storage_info')
+          .insert({
+            user_input_id: inputId,
+            final_signed_url: data.final_signed_url,
+            final_audio_path: data.final_audio_path,
+            emotion_summary: data.emotion_summary,
+            script_path: data.script_path,
+            tts_path: data.tts_path,
+            alignment_path: data.alignment_path,
+          });
+        if (insertError) console.error('Failed to persist storage_info:', insertError);
+      } else if (inputsError) {
+        console.error('Error querying user_input:', inputsError);
+      }
+    }
+
   } catch (err) {
     console.error('Failed to fetch meditation:', err);
   } finally {
@@ -75,6 +120,14 @@ useEffect(() => {
   useEffect(() => {
     if (!audioPath) return;
 
+    audioRef.current = new Audio(audioPath);
+
+    audioRef.current.addEventListener('ended', () => {
+      setIsPlaying(false);
+      setShowControls(false);
+      setMeditationEnded(true);
+    });
+
     setLoading(false);
     const duration = 1000;
     const from = 0.5;
@@ -85,7 +138,7 @@ useEffect(() => {
       if (start === null) start = timestamp;
       const elapsed = timestamp - start;
       const progress = Math.min(elapsed / duration, 1);
-      const eased = from + (to - from) * (1 - Math.pow(1 - progress, 4)); // easeOutQuart
+      const eased = from + (to - from) * (1 - Math.pow(1 - progress, 4));
       setDistortion(eased);
       if (progress < 1) {
         requestAnimationFrame(animate);
@@ -130,6 +183,7 @@ useEffect(() => {
         <meta property="og:title" content="Minday Meditation – Personalized Session" />
         <meta property="og:description" content="Listen to your guided meditation crafted from your personal experience. Relax and reconnect with your thoughts through a unique session." />
       </Head>
+      <ProtectedRoute>
       <main
         style={{
           width: '100vw',
@@ -263,6 +317,10 @@ useEffect(() => {
             )}
           </div>
           <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" onClick={() => {
+            if (audioRef.current) {
+              audioRef.current.pause();
+              audioRef.current.currentTime = 0;
+            }
             setMeditationEnded(true);
             setShowControls(false);
             setIsPlaying(false);
@@ -339,6 +397,7 @@ useEffect(() => {
         }
       `}</style>
       </main>
+      </ProtectedRoute>
     </>
   );
 }

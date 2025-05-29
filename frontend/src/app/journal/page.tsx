@@ -4,18 +4,37 @@ import Head from 'next/head';
 import React, { useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import { supabase } from '@/lib/supabaseClient';
 
 
 export default function JournalEntry() {
   const [text, setText] = useState('');
   const router = useRouter();
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    // Store journal entry in sessionStorage
     sessionStorage.setItem("journal_entry", text);
+
+    // Ensure the user's profile exists
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await supabase
+        .from('profiles')
+        .upsert({ id: session.user.id, email: session.user.email });
+
+      // Insert journal entry only
+      await supabase
+        .from('user_input')
+        .insert({ user_id: session.user.id, entry: text });
+    }
+
+    // Navigate to the prepare page
     router.push("/prepare");
   };
 
   return (
+    <ProtectedRoute>
     <main
       style={{
         backgroundColor: '#F9E66B',
@@ -58,24 +77,6 @@ export default function JournalEntry() {
         className="entry"
       />
 
-      <style jsx>{`
-        .entry {
-          width: 80%;
-          height: 60%;
-          background: transparent;
-          border: none;
-          outline: none;
-          resize: none;
-          font-family: Helvetica, sans-serif;
-          font-weight: lighter;
-          font-size: 1.25rem;
-          color: #333;
-          caret-color: #0A29F4;
-        }
-        .entry::placeholder {
-          color: #B0B0B0; /* light grey */
-        }
-      `}</style>
             <div style={{
         position: 'absolute',
         bottom: '20px',
@@ -118,6 +119,25 @@ export default function JournalEntry() {
           Next
         </button>
       </div>
+      <style jsx>{`
+        .entry {
+          width: 80%;
+          height: 60%;
+          background: transparent;
+          border: none;
+          outline: none;
+          resize: none;
+          font-family: Helvetica, sans-serif;
+          font-weight: lighter;
+          font-size: 1.25rem;
+          color: #333;
+          caret-color: #0A29F4;
+        }
+        .entry::placeholder {
+          color: #B0B0B0; /* light grey */
+        }
+      `}</style>
     </main>
+    </ProtectedRoute>
   );
 }

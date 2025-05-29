@@ -3,6 +3,7 @@ import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
 
 const nextConfig: NextConfig = {
   output: 'export',
+  trailingSlash: true,
   reactStrictMode: true,
   webpack(config, { isServer }) {
     if (process.env.ANALYZE === 'true') {
