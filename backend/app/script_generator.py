@@ -134,7 +134,6 @@ async def generate_meditation_script(
     models = [
         "models/gemini-2.0-flash",
         "models/gemini-2.0-flash-001",
-        "models/gemini-2.0-flash-002",
     ]
 
     succeeded = False
