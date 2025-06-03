@@ -100,7 +100,7 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
             style={{
-              padding: '0.75rem 1rem',
+              padding: '0.7rem 1.5rem',
               fontSize: '1rem',
               border: 'none',
               borderRadius: '8px',
@@ -113,7 +113,7 @@ export default function LoginPage() {
           <button
             onClick={handleLogin}
             style={{
-              padding: '0.75rem 1.5rem',
+              padding: '0.7rem 1.5rem',
               backgroundColor: '#3A53F7',
               color: '#FFF',
               border: 'none',

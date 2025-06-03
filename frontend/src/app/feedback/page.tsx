@@ -151,7 +151,7 @@ export default function FeedbackEntry() {
       backgroundColor: '#F9F9F5',
       border: 'none',
       borderRadius: '9999px',
-      padding: '0.5rem 1rem',
+      padding: '0.7rem 1.5rem',
       color: '#3A53F7',
       fontFamily: 'inherit',
       fontSize: '1rem',

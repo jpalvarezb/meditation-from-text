@@ -356,7 +356,7 @@ useEffect(() => {
               backgroundColor: '#3A53F7',
               color: 'white',
               border: 'none',
-              padding: '0.6rem 2rem',
+              padding: '0.7rem 1.5rem',
               borderRadius: '20px',
               fontFamily: 'Cutive Mono, monospace',
               fontSize: '1rem',
