@@ -4,6 +4,7 @@ import Head from 'next/head';
 import React, { useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { supabase } from '@/lib/supabaseClient';
 
 
 
@@ -14,29 +15,50 @@ export default function FeedbackEntry() {
 
 
   const handleFeedback = async () => {
-  try {
-    console.log("Submitting feedback:", { star_rating: starRating, feedback_text: text })
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/feedback`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        star_rating: starRating,
-        feedback_text: text
-      })
-    });
+    try {
+      console.log("Submitting feedback:", { star_rating: starRating, feedback_text: text });
+      // Get current Supabase session
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
 
-    if (!response.ok) throw new Error("Request failed");
+      if (sessionError) {
+        console.error("Error fetching Supabase session:", sessionError);
+        alert("Unable to verify user session.");
+        return;
+      }
 
-    const result = await response.json();
-    console.log("Feedback response:", result);
-    alert("Thanks for your feedback!");
-  } catch (error) {
-    console.error("Feedback submission error:", error);
-    alert("Failed to submit feedback. Please try again later.");
-  }
-};
+      if (!session) {
+        alert("You must be logged in to submit feedback.");
+        return;
+      }
+
+      // Insert into Supabase 'feedback' table
+      const { error: insertError } = await supabase
+        .from('feedback')
+        .insert({
+          user_id: session.user.id,
+          message: text,
+          star_rating: starRating,
+          metadata: {},
+        });
+
+      if (insertError) {
+        console.error("Failed to insert feedback:", insertError);
+        alert("Failed to submit feedback. Please try again.");
+      } else {
+        console.log("Feedback inserted successfully");
+        alert("Thanks for your feedback!");
+        // Clear inputs
+        setText("");
+        setStarRating(0);
+      }
+    } catch (error) {
+      console.error("Feedback submission error:", error);
+      alert("Failed to submit feedback. Please try again later.");
+    }
+  };
 
   return (
     <ProtectedRoute>

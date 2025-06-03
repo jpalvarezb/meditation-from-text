@@ -85,9 +85,13 @@ useEffect(() => {
         .eq('meditation_type', meditation_type)
         .order('created_at', { ascending: false })
         .limit(1);
+      console.log("Queried user_input rows:", inputs);
+      console.log("Fetch error on user_input:", inputsError);
+
 
       const inputId = inputs?.[0]?.id;
       if (inputId) {
+        console.log("Attempting to insert into storage_info with user_input_id:", inputId);
         const { error: insertError } = await supabase
           .from('storage_info')
           .insert({
@@ -99,9 +103,12 @@ useEffect(() => {
             tts_path: data.tts_path,
             alignment_path: data.alignment_path,
           });
-        if (insertError) console.error('Failed to persist storage_info:', insertError);
+        if (insertError) console.error("Failed to persist storage_info:", insertError);
+        else console.log("storage_info inserted successfully for inputId:", inputId);
       } else if (inputsError) {
-        console.error('Error querying user_input:', inputsError);
+        console.error("Error querying user_input before storage_info insert:", inputsError);
+      } else {
+        console.warn("No matching user_input row found; skipping storage_info insert");
       }
     }
 

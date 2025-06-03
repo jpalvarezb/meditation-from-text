@@ -13,25 +13,44 @@ export default function JournalEntry() {
   const router = useRouter();
 
   const handleNext = async () => {
-    // Store journal entry in sessionStorage
-    sessionStorage.setItem("journal_entry", text);
+  console.log("handleNext triggered");
 
-    // Ensure the user's profile exists
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      await supabase
-        .from('profiles')
-        .upsert({ id: session.user.id, email: session.user.email });
+  sessionStorage.setItem("journal_entry", text);
+  console.log("Stored in sessionStorage:", text);
 
-      // Insert journal entry only
-      await supabase
-        .from('user_input')
-        .insert({ user_id: session.user.id, entry: text });
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) console.error("Session fetch error:", sessionError);
+  console.log("Supabase session:", session);
+
+  if (session) {
+    console.log("Upserting profile for:", session.user.id);
+
+    const { error: upsertError } = await supabase
+      .from('profiles')
+      .upsert({ id: session.user.id, email: session.user.email });
+
+    if (upsertError) {
+      console.error("Profile upsert failed:", upsertError);
+    } else {
+      console.log("Profile upserted");
     }
 
-    // Navigate to the prepare page
-    router.push("/prepare");
-  };
+    console.log("Inserting journal entry for:", session.user.id);
+    const { data, error } = await supabase
+      .from('user_input')
+      .insert({ user_id: session.user.id, entry: text });
+
+    if (error) {
+      console.error("Insert failed:", error);
+    } else {
+      console.log("Insert succeeded:", data);
+    }
+  } else {
+    console.warn("No session found, skipping insert");
+  }
+
+  router.push("/prepare");
+};
 
   return (
     <ProtectedRoute>

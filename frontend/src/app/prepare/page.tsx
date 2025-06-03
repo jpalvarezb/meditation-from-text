@@ -41,6 +41,11 @@ export default function PreparePage() {
       } else {
         const recordId = inputs[0].id;
         // Update with minutes and meditation type
+        console.log("Updating record ID:", recordId);
+        console.log("With values:", {
+          minutes: parseInt(duration, 10),
+          meditation_type: type,
+        });
         const { error: updateError } = await supabase
           .from('user_input')
           .update({ minutes: parseInt(duration, 10), meditation_type: type })
