@@ -46,6 +46,13 @@ export default function FeedbackEntry() {
 
       if (insertError) {
         console.error("Failed to insert feedback:", insertError);
+        await supabase.from('bug_reports').insert({
+          user_id: session.user.id,
+          message: insertError.message,
+          stacktrace: insertError.stack ?? null,
+          page: 'feedback',
+          metadata: JSON.stringify({ action: 'insert feedback', text, starRating }),
+        });
         alert("Failed to submit feedback. Please try again.");
       } else {
         console.log("Feedback inserted successfully");
