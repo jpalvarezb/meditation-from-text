@@ -106,7 +106,7 @@ export default function JournalEntry() {
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Tell me, what's on your mind..."
+        placeholder="What would you like to meditate on today? (e.g. I'm excited but anxious to be going on a trip next month)"
         autoFocus
         className="entry"
       />
