@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
 
 const nextConfig: NextConfig = {
+  output: 'export',
   trailingSlash: true,
   reactStrictMode: true,
   webpack(config, { isServer }) {
