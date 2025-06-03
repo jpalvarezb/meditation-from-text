@@ -31,9 +31,17 @@ export default function JournalEntry() {
 
     if (upsertError) {
       console.error("Profile upsert failed:", upsertError);
+      await supabase.from('bug_reports').insert({
+        user_id: session.user.id,
+        message: upsertError.message,
+        stacktrace: upsertError.stack ?? null,
+        page: 'journal',
+        metadata: JSON.stringify({ action: 'upsert profile', entry: text }),
+      });
     } else {
       console.log("Profile upserted");
     }
+
 
     console.log("Inserting journal entry for:", session.user.id);
     const { data, error } = await supabase
@@ -42,6 +50,13 @@ export default function JournalEntry() {
 
     if (error) {
       console.error("Insert failed:", error);
+      await supabase.from('bug_reports').insert({
+        user_id: session.user.id,
+        message: error.message,
+        stacktrace: error.stack ?? null,
+        page: 'journal',
+        metadata: JSON.stringify({ action: 'insert user_input', entry: text }),
+      });
     } else {
       console.log("Insert succeeded:", data);
     }

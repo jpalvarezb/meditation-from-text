@@ -32,8 +32,23 @@ export default function LoginPage() {
       setSent(true);
       setResendVisible(false);
       setResendCountdown(15);
-    } else console.error('Login error:', error);
-  };
+    } else {
+  console.error('Login error:', error);
+
+  const { data: { session } } = await supabase.auth.getSession();
+  const user_id = session?.user?.id ?? null;
+
+  await supabase.from('bug_reports').insert({
+    user_id,
+    message: typeof error === 'object' && error?.message ? error.message : String(error),
+    stacktrace: typeof error === 'object' && 'stack' in error ? error.stack ?? null : null,
+    page: 'login',
+    metadata: JSON.stringify({ email }),
+  });
+}
+
+};
+
 
   return (
 

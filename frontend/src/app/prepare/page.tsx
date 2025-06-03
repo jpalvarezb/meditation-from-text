@@ -37,25 +37,41 @@ export default function PreparePage() {
         .limit(1);
 
       if (fetchError || !inputs || inputs.length === 0) {
-        console.error('Could not find user_input row:', fetchError);
-      } else {
-        const recordId = inputs[0].id;
-        // Update with minutes and meditation type
-        console.log("Updating record ID:", recordId);
-        console.log("With values:", {
-          minutes: parseInt(duration, 10),
-          meditation_type: type,
-        });
+      console.error('Could not find user_input row:', fetchError);
+      await supabase.from('bug_reports').insert({
+        user_id: session.user.id,
+        message: fetchError?.message || 'Missing user_input row',
+        stacktrace: fetchError?.stack ?? null,
+        page: 'prepare',
+        metadata: JSON.stringify({ duration, meditation_type: type, journal_entry }),
+      });
+    } else {
+      const recordId = inputs[0].id;
+      console.log("Updating record ID:", recordId);
+      console.log("With values:", {
+        minutes: parseInt(duration, 10),
+        meditation_type: type,
+      });
+
         const { error: updateError } = await supabase
           .from('user_input')
           .update({ minutes: parseInt(duration, 10), meditation_type: type })
           .eq('id', recordId);
-        if (updateError) console.error('Failed to update input row:', updateError);
+        if (updateError) {
+        console.error('Failed to update input row:', updateError);
+        await supabase.from('bug_reports').insert({
+          user_id: session.user.id,
+          message: updateError.message,
+          stacktrace: updateError.stack ?? null,
+          page: 'prepare',
+          metadata: JSON.stringify({ recordId, duration, meditation_type: type }),
+        });
       }
     }
 
     router.push('/meditation');
-  };
+  }
+};
 
   return (
     <ProtectedRoute>

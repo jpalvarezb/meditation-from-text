@@ -28,10 +28,11 @@ useEffect(() => {
   if (retryingRef.current) return;
   retryingRef.current = true;
 
+  const journal_entry = sessionStorage.getItem('journal_entry') || '';
+  const duration_minutes = parseInt(sessionStorage.getItem('duration') || '5', 10);
+  const meditation_type = sessionStorage.getItem('meditation_type') || 'self-love';
+
   try {
-    const journal_entry = sessionStorage.getItem('journal_entry') || '';
-    const duration_minutes = parseInt(sessionStorage.getItem('duration') || '5', 10);
-    const meditation_type = sessionStorage.getItem('meditation_type') || 'self-love';
 
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/meditate`, {
       method: 'POST',
@@ -114,6 +115,16 @@ useEffect(() => {
 
   } catch (err) {
     console.error('Failed to fetch meditation:', err);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await supabase.from('bug_reports').insert({
+        user_id: session.user.id,
+        message: (err as Error)?.message ?? 'Meditation fetch error',
+        stacktrace: (err as Error)?.stack ?? null,
+        page: 'meditation',
+        metadata: JSON.stringify({ journal_entry, duration_minutes, meditation_type }),
+      });
+    }
   } finally {
     retryingRef.current = false;
   }
