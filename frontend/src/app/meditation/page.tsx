@@ -84,8 +84,6 @@ useEffect(() => {
         .eq('meditation_type', meditation_type)
         .order('created_at', { ascending: false })
         .limit(1);
-      console.log("Queried user_input rows:", inputs);
-      console.log("Fetch error on user_input:", inputsError);
 
 
       const inputId = inputs?.[0]?.id;
@@ -211,7 +209,7 @@ useEffect(() => {
           flexDirection: 'column',
           fontFamily: "'Cutive Mono', monospace",
           position: 'relative',
-          overflow: 'hidden',
+          overflow: 'visible',
         }}
       >
       {loading && (
