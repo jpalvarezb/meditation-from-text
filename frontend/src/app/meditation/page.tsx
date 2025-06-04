@@ -209,7 +209,7 @@ useEffect(() => {
           flexDirection: 'column',
           fontFamily: "'Cutive Mono', monospace",
           position: 'relative',
-          overflow: 'visible',
+          overflow: 'hidden',
         }}
       >
       {loading && (
@@ -239,7 +239,7 @@ useEffect(() => {
           cursor: !showControls ? 'pointer' : 'default',
           width: 'clamp(280px, 90vmin, 600px)',
           height: 'clamp(280px, 90vmin, 600px)',
-          overflow: 'hidden',
+          overflow: 'visible',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
