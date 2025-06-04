@@ -1,5 +1,6 @@
 import os
 import json
+import shutil
 import tempfile
 from typing import Optional
 from app.logger import logger
@@ -78,37 +79,34 @@ def fetch_from_gcs(gcs_path: str, dest_path: Optional[str] = None) -> str:
     return tmp_path
 
 
-def resolve_asset(path: str) -> str:
+def resolve_asset(path: str, tmp_root: str = "/tmp") -> str:
     """
     Resolves a path to a local file.
-    - If in dev mode, returns the original local path.
-    - If in prod mode and the path starts with gs://, downloads it to /tmp and returns the local tmp path.
+    - In dev (IS_PROD=False), returns the original path.
+    - In prod, if path starts with "gs://", downloads into tmp_root and returns that local path.
     """
-    if not IS_PROD:
+    # If not in production or this isn't a GCS URI, just return as-is
+    if not IS_PROD or not path.startswith("gs://"):
         return path
 
-    if not path.startswith("gs://"):
-        return path
-
-    # Extract GCS bucket and blob path
+    # Split off "gs://bucket/..."
     _, bucket_path = path.split("gs://", 1)
-    bucket_name, *blob_parts = bucket_path.split("/")
-    blob_path = "/".join(blob_parts)
+    bucket_name, *blob_parts = bucket_path.split("/", 1)
+    blob_path = blob_parts[0] if blob_parts else ""
 
-    # Local destination
-    tmp_path = os.path.join("/tmp", blob_path)
-    os.makedirs(os.path.dirname(tmp_path), exist_ok=True)
+    # Build a path under tmp_root that mirrors the blob's path
+    local_dest = os.path.join(tmp_root, blob_path)
+    os.makedirs(os.path.dirname(local_dest), exist_ok=True)
 
-    # Download from GCS
     bucket = client.bucket(bucket_name)
     blob = bucket.blob(blob_path)
 
     if not blob.exists():
         raise FileNotFoundError(f"GCS blob does not exist: {path}")
 
-    blob.download_to_filename(tmp_path)
-    logger.info(f"Downloaded {path} to {tmp_path}")
-    return tmp_path
+    blob.download_to_filename(local_dest)
+    logger.info(f"Downloaded {path} to {local_dest}")
+    return local_dest
 
 
 def generate_signed_url(gcs_uri: str, expiration_minutes: int = 60) -> str:
@@ -139,25 +137,16 @@ def generate_signed_url(gcs_uri: str, expiration_minutes: int = 60) -> str:
     return url
 
 
-def clean_up_tmp_folder():
-    tmp_dir = tempfile.gettempdir()
-    if IS_PROD and not IS_LOCAL_TEST and not tmp_dir.startswith("/tmp"):
-        logger.warning(f"Aborting cleanup – unsafe temp path: {tmp_dir}")
+def clean_up_tmp_folder(tmp_root: str):
+    """
+    Completely delete the per‐request temp folder (tmp_root) and everything under it.
+    """
+    if not os.path.exists(tmp_root):
+        logger.debug(f"No temp folder to clean up at {tmp_root}")
         return
+
     try:
-        deleted_count = 0
-        for root, dirs, files in os.walk(tmp_dir, topdown=False):
-            for file in files:
-                try:
-                    os.remove(os.path.join(root, file))
-                    deleted_count += 1
-                except Exception as e:
-                    logger.warning(f"Failed to delete file: {file} – {e}")
-            for dir in dirs:
-                try:
-                    os.rmdir(os.path.join(root, dir))
-                except Exception as e:
-                    logger.warning(f"Failed to delete directory: {dir} – {e}")
-        logger.debug(f"Temporary folder cleaned, {deleted_count} files deleted.")
+        shutil.rmtree(tmp_root)
+        logger.debug(f"Cleaned up temp folder {tmp_root}")
     except Exception as e:
-        logger.warning(f"Failed to list tmp directory contents: {e}")
+        logger.warning(f"Failed to remove temp folder {tmp_root}: {e}")

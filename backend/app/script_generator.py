@@ -3,7 +3,7 @@ import asyncio
 from google import genai
 from datetime import datetime
 from app.logger import logger
-from config.params import GEMINI_API_KEY, TTS_DIR, IS_PROD
+from config.params import GEMINI_API_KEY, IS_PROD
 from google.genai.errors import ServerError, ClientError
 from config.meditation_types import MEDITATION_TYPE_STYLES
 from app.cloud_utils import upload_to_gcs
@@ -26,26 +26,20 @@ def generate_prompt(
     """
     Generates a Gemini-compatible prompt for a personalized meditation script.
     """
-    # 1) Summarize emotions
     emotion_summary = ", ".join(f"{k}: {v:.5f}" for k, v in emotion_scores.items())
     top_emotion = max(emotion_scores, key=emotion_scores.get)
 
-    # 2) Pull in the style guidance, falling back to "self-love"
     meditation_guidance = MEDITATION_TYPE_STYLES.get(
         meditation_type.lower(), MEDITATION_TYPE_STYLES["self-love"]
     )
-
-    # 2a) Pull the techniques to be used in the meditation
     meditation_techniques = EMOTION_TO_TECHNIQUES.get(
         top_emotion.lower(), ["mindfulness"]
     )
-
     full_meditation_techniques = "\n".join(
         f"{tech}: {MEDITATION_TECHNIQUES.get(tech, MEDITATION_TECHNIQUES['mindfulness'])}"
         for tech in meditation_techniques
     )
 
-    # 3) Build the prompt
     prompt = f"""
     You are an expert meditation guide, known for intuitive emotional insight, poetic metaphor,
     and the ability to craft deeply resonant meditations, spoken aloud.
@@ -109,6 +103,9 @@ def generate_prompt(
 
 
 def length_threshold(time: int, word_count: int, tolerance: float = 0.30) -> bool:
+    """
+    Returns True if `word_count` is within ±tolerance of (time * 135).
+    """
     expected = time * 135
     lower = expected * (1 - tolerance)
     upper = expected * (1 + tolerance)
@@ -118,30 +115,34 @@ def length_threshold(time: int, word_count: int, tolerance: float = 0.30) -> boo
 async def generate_meditation_script(
     prompt: str,
     time: int,
+    tmp_root: str,
     client=None,
     max_loops: int = 10,
     max_total_retries: int = 3,
 ) -> str:
     """
-    Fully robust meditation script generator with:
-    - Model fallback if overloaded
-    - Retry full generation if feedback refinement fails
-    - Exponential backoff between retries
+    Generates a meditation script via Gemini. Writes the script as a .txt file under tmp_root.
+    In production, uploads to GCS and deletes the local file. Returns either:
+      - in dev (IS_PROD=False): the local path under tmp_root
+      - in prod: the GCS URI of the uploaded script
     """
     if client is None:
         client = default_client
 
+    # 1) Ensure tmp_root exists:
+    os.makedirs(tmp_root, exist_ok=True)
+
     models = [
         "models/gemini-2.0-flash",
         "models/gemini-2.0-flash-001",
-        "models/gemini-2.0-flash-002",
     ]
 
     succeeded = False
     model_used = None
 
+    # 2) Attempt up to max_total_retries
     for attempt in range(max_total_retries):
-        # --- Initial generation with model fallback ---
+        # 2a) Try each model in turn
         for model_name in models:
             try:
                 logger.info(
@@ -153,6 +154,7 @@ async def generate_meditation_script(
                 model_used = model_name
                 break
             except ServerError as e:
+                # If 503, try next model
                 if "503" in str(e):
                     logger.warning(
                         f"Model {model_name} overloaded (503). Trying next model..."
@@ -161,18 +163,16 @@ async def generate_meditation_script(
                 else:
                     raise
             except ClientError as e:
+                # If rate-limited (429), back off
                 if e.code == 429:
-                    # exponential backoff / respect retryDelay
                     retry_delay = 30
                     try:
                         details = e.details["error"]["details"][2]
                         retry_delay = (
                             int(details.get("retryDelay", "30s").rstrip("s")) or 30
                         )
-                    except (KeyError, IndexError, TypeError, ValueError) as parse_error:
-                        logger.warning(
-                            f"Could not parse retryDelay, using default: {parse_error}"
-                        )
+                    except Exception:
+                        logger.warning("Could not parse retryDelay; using default 30s")
                     logger.warning(
                         f"Rate limit (429). Sleeping {retry_delay}s before retry..."
                     )
@@ -181,29 +181,28 @@ async def generate_meditation_script(
                 else:
                     raise
         else:
-            # no model succeeded, back off and retry
+            # No model succeeded this round
             logger.info("All models overloaded. Backing off before retry...")
             await asyncio.sleep(2**attempt)
             continue
 
-        # --- Refinement loop to adjust length ---
+        # 2b) Refinement loop: check word count and regenerate if needed
         loops = 0
         while loops < max_loops:
             word_count = len(script.split())
             if length_threshold(time, word_count):
                 logger.info(
-                    f"Script passed with {word_count} words check after {loops}/{max_loops} refinement loops."
+                    f"Script passed with {word_count} words after {loops}/{max_loops} refinement loops."
                 )
                 succeeded = True
                 break
 
             logger.info(
-                f"Script failed with {word_count} words after {loops + 1}/{max_loops} refinement loops. Restarting full generation..."
+                f"Script failed with {word_count} words after {loops + 1}/{max_loops} refinement loops. Regenerating..."
             )
             loops += 1
             await asyncio.sleep(2**attempt)
             try:
-                # Re-run generation
                 chat = client.aio.chats.create(model=model_used)
                 response = await chat.send_message(prompt)
                 script = response.text
@@ -211,36 +210,38 @@ async def generate_meditation_script(
                 logger.warning(f"Regeneration failed: {regen_error}")
                 break
 
-        # if we hit the length target, break out of retry loop
         if succeeded:
             break
 
-    # after retries, if still not succeeded, error out
+    # 3) If we never succeeded, throw an error
     if not succeeded:
         logger.error(
             f"Exceeded maximum retries ({max_total_retries}). Meditation generation failed."
         )
         raise ValueError("threshold_unmet")
 
-    # Save the final script
+    # 4) Write the final script as a timestamped .txt under tmp_root
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     script_filename = f"script_{timestamp}.txt"
-    script_output_path = os.path.join(TTS_DIR, script_filename)
+    script_output_path = os.path.join(tmp_root, script_filename)
     with open(script_output_path, "w") as f:
         f.write(script)
+
     logger.info(
         f"Script generated successfully after attempt {attempt + 1} using {model_used}"
     )
+
+    # 5) If in prod, upload & delete; otherwise return local path
     if IS_PROD:
-        gcs_output = upload_to_gcs(local_path=script_output_path)
-        logger.info(f"Script uploaded to GCS: {gcs_output}")
+        gcs_uri = upload_to_gcs(local_path=script_output_path)
+        logger.info(f"Script uploaded to GCS: {gcs_uri}")
         try:
             os.remove(script_output_path)
-            logger.debug(
-                f"Deleted local script file after upload: {script_output_path}"
-            )
+            logger.debug(f"Deleted local script: {script_output_path}")
         except Exception as e:
-            logger.warning(f"Failed to delete local script: {e}")
-        return gcs_output
+            logger.warning(
+                f"Could not delete local script file {script_output_path}: {e}"
+            )
+        return gcs_uri
 
     return script_output_path

@@ -17,7 +17,7 @@ from app.audio_utils import (
     build_outro_segment,
     load_and_clean_audio_asset,
 )
-from config.params import OUTPUT_DIR, IS_PROD
+from config.params import IS_PROD
 
 
 def sound_engineer_pipeline(
@@ -25,26 +25,35 @@ def sound_engineer_pipeline(
     alignment_json_path: str,
     emotion_summary: dict,
     output_filename: str = "final_mix.wav",
+    tmp_root: str = "/tmp",
 ) -> str:
     """
     Simpler pipeline: build one long background, fade its tail, then overlay TTS and chime.
     """
 
+    # Ensure tmp_root exists
+    os.makedirs(tmp_root, exist_ok=True)
     # 1) Choose assets & load files
     chosen = choose_assets(emotion_summary)
     amb = normalize_volume(
-        load_and_clean_audio_asset(os.path.join("soundscapes", chosen["ambient"])),
+        load_and_clean_audio_asset(
+            os.path.join("soundscapes", chosen["ambient"]), tmp_root
+        ),
         target_dBFS=chosen.get("ambient_volume_dBFS", -32.0),
     )
     tone = normalize_volume(
-        load_and_clean_audio_asset(os.path.join("tones", chosen["tone"])),
+        load_and_clean_audio_asset(os.path.join("tones", chosen["tone"]), tmp_root),
         target_dBFS=chosen.get("tone_volume_dBFS", -36.0),
     )
     start_chime = load_and_clean_audio_asset(
-        os.path.join("chimes", chosen.get("start_chime", "start_chime_paiste_gong.wav"))
+        os.path.join(
+            "chimes", chosen.get("start_chime", "start_chime_paiste_gong.wav")
+        ),
+        tmp_root,
     )
     end_chime = load_and_clean_audio_asset(
-        os.path.join("chimes", chosen.get("end_chime", "end_chime_singing_bowl.wav"))
+        os.path.join("chimes", chosen.get("end_chime", "end_chime_singing_bowl.wav")),
+        tmp_root,
     )
 
     # 2) Build intro
@@ -106,7 +115,9 @@ def sound_engineer_pipeline(
     ):
         if word.lower().strip(".,!?") in TRIGGER_WORDS:
             base_mix = base_mix.overlay(
-                normalize_volume(next_bar_chime(chosen["interchimes"]), -40.0),
+                normalize_volume(
+                    next_bar_chime(chosen["interchimes"], tmp_root), -40.0
+                ),
                 position=ms,
             )
 
@@ -128,8 +139,7 @@ def sound_engineer_pipeline(
     final_mix = (base_core + final_chime).fade_out(len(end_chime))
 
     # 10) Export
-    out_path = os.path.join(OUTPUT_DIR, output_filename)
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    out_path = os.path.join(tmp_root, output_filename)
     final_mix.export(out_path, format="mp3")
     if IS_PROD:
         gcs_out = upload_to_gcs(local_path=out_path)

@@ -17,6 +17,7 @@ async def meditation_engine(
     duration_minutes: int,
     meditation_type: str,
     mode: str = "tts",
+    tmp_root: str = "/tmp",
 ) -> dict:
     logger.info(
         f"Received inputs - duration: {duration_minutes} min, type: {meditation_type}, mode: {mode}"
@@ -41,22 +42,23 @@ async def meditation_engine(
         try:
             logger.info("Generating meditation script...")
             script_path = await generate_meditation_script(
-                prompt=prompt, time=duration_minutes
+                prompt=prompt, time=duration_minutes, tmp_root=tmp_root
             )
             logger.info(f"Script saved at: {script_path}")
         except Exception as e:
             logger.error(f"Script generation failed: {e}")
             raise
 
+        script_local = resolve_asset(script_path)
+
         logger.info("Generating TTS audio...")
-        tts_path = generate_tts(script_path)
+        tts_path = generate_tts(script_local, tmp_root=tmp_root)
         logger.info(f"TTS audio saved at: {tts_path}")
 
-        tts_local = resolve_asset(tts_path)
+        tts_local = resolve_asset(tts_path, tmp_root)
 
         logger.info("Aligning audio and text...")
-        alignment_local = tts_local.replace(".wav", ".json")
-        alignment_path = align_audio_text(tts_local, script_path, alignment_local)
+        alignment_path = align_audio_text(tts_local, script_local, tmp_root=tmp_root)
         logger.info(f"Alignment JSON saved at: {alignment_path}")
 
         logger.info("Sound engineering final meditation...")
@@ -66,6 +68,7 @@ async def meditation_engine(
             alignment_json_path=alignment_path,
             emotion_summary=emotion_summary,
             output_filename=output_filename,
+            tmp_root=tmp_root,
         )
         final_signed_url = None
         if final_mix_path.startswith("gs://"):
@@ -73,7 +76,7 @@ async def meditation_engine(
             logger.info(f"Final mix saved at: {final_mix_path}")
         logger.info("Medition generation pipeline finished successfully.")
         # Clean Up local files
-        clean_up_tmp_folder()
+        clean_up_tmp_folder(tmp_root)
         return {
             "final_signed_url": final_signed_url
             if final_signed_url

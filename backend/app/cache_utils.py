@@ -4,7 +4,7 @@ import time
 import hashlib
 from typing import Any, Optional
 from app.logger import logger
-from app.cloud_utils import upload_to_gcs, fetch_from_gcs
+from app.cloud_utils import upload_to_gcs, fetch_from_gcs, generate_signed_url
 from config.params import GCP_AUDIO_BUCKET, CACHE_DIR
 
 # how long a cache entry stays fresh
@@ -56,16 +56,9 @@ def save_to_cache(cache_key: str, result: Any) -> None:
 
 
 def load_from_cache(cache_key: str) -> Optional[Any]:
-    """
-    Try to load a fresh cache:
-      - if local copy missing, fetch from GCS (creates parent dirs automatically)
-      - read + delete local copy
-      - if TTL expired, return None
-    """
     local = _local_path(cache_key)
     remote = _remote_path(cache_key)
 
-    # ensure parent exists before fetch
     os.makedirs(os.path.dirname(local), exist_ok=True)
 
     if not os.path.exists(local):
@@ -78,14 +71,12 @@ def load_from_cache(cache_key: str) -> Optional[Any]:
         with open(local, "r") as f:
             payload = json.load(f)
     except Exception:
-        # unreadable -> drop it
         try:
             os.remove(local)
         except OSError:
             pass
         return None
 
-    # delete immediately
     try:
         os.remove(local)
     except OSError:
@@ -95,7 +86,32 @@ def load_from_cache(cache_key: str) -> Optional[Any]:
     if time.time() - created > CACHE_TTL_SECONDS:
         return None
 
-    return payload.get("result")
+    raw_result = payload.get("result")
+
+    # If the result contains a GCS URI, regenerate the signed URL
+    if isinstance(raw_result, str) and raw_result.startswith("gs://"):
+        return generate_signed_url(raw_result)
+
+    # Handle cases where result is a dict or list of URIs
+    if isinstance(raw_result, dict):
+        new_result = {}
+        for k, v in raw_result.items():
+            if k == "final_audio_path" and isinstance(v, str) and v.startswith("gs://"):
+                new_result[k] = v
+                new_result["final_signed_url"] = generate_signed_url(v)
+            else:
+                new_result[k] = v
+        return new_result
+
+    if isinstance(raw_result, list):
+        return [
+            generate_signed_url(v)
+            if isinstance(v, str) and v.startswith("gs://")
+            else v
+            for v in raw_result
+        ]
+
+    return raw_result
 
 
 def cache_exists(cache_key: str) -> bool:

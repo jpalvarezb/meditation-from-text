@@ -1,6 +1,9 @@
+import uuid
+import tempfile
+import os
 from app.logger import logger
 from api.engine import meditation_engine
-from fastapi import FastAPI, HTTPException, Request, Depends, Header
+from fastapi import FastAPI, HTTPException, Depends, Header
 from api.schemas import (
     MeditationRequest,
     MeditationResponse,
@@ -29,7 +32,6 @@ app.add_middleware(
 
 @app.post("/meditate", response_model=MeditationResponse)
 async def meditate(
-    request: Request,
     api_key: str = Header(None, alias="x-api-key"),
     body: MeditationRequest = Depends(),
 ):
@@ -45,12 +47,17 @@ async def meditate(
         logger.info("Serving meditation from cache")
         return cached
 
+    request_id = str(uuid.uuid4())
+    tmp_root = os.path.join(tempfile.gettempdir(), f"minday-{request_id}")
+    os.makedirs(tmp_root, exist_ok=True)
+
     try:
         result = await meditation_engine(
             journal_entry=body.journal_entry,
             duration_minutes=body.duration_minutes,
             meditation_type=body.meditation_type,
             mode=body.mode,
+            tmp_root=tmp_root,
         )
     except ValueError as e:
         if str(e) == "threshold_unmet":
@@ -60,7 +67,15 @@ async def meditate(
         logger.error(f"API error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to generate meditation")
 
-    save_to_cache(cache_key, result)
+    # Cache only raw GCS paths and emotion summary, omitting final_signed_url
+    to_cache = {
+        "final_audio_path": result["final_audio_path"],
+        "emotion_summary": result["emotion_summary"],
+        "script_path": result["script_path"],
+        "tts_path": result["tts_path"],
+        "alignment_path": result["alignment_path"],
+    }
+    save_to_cache(cache_key, to_cache)
     return result
 
 

@@ -108,7 +108,7 @@ def build_outro_segment(
     return bg_tail_faded.overlay(chime)
 
 
-def load_and_clean_audio_asset(rel_path: str) -> AudioSegment:
+def load_and_clean_audio_asset(rel_path: str, tmp_root: str = "/tmp") -> AudioSegment:
     """
     Loads an audio file from local or GCS, deletes the file and cleans up its empty parent dirs in prod.
     """
@@ -118,15 +118,15 @@ def load_and_clean_audio_asset(rel_path: str) -> AudioSegment:
     if IS_PROD:
         bucket_subpath = rel_path.replace(os.sep, "/")
         gcs_path = f"gs://{GCP_AUDIO_BUCKET}/{bucket_subpath}"
-        tmp_path = os.path.join("/tmp", rel_path)
+        tmp_path = os.path.join(tmp_root, rel_path)
         os.makedirs(os.path.dirname(tmp_path), exist_ok=True)
         fetch_from_gcs(gcs_path, tmp_path)
         audio = AudioSegment.from_file(tmp_path)
         try:
             os.remove(tmp_path)
-            # Recursively remove empty parent dirs up to /tmp
+            # Recursively remove empty parent dirs up to tmp_root
             dir_path = os.path.dirname(tmp_path)
-            while dir_path != "/tmp":
+            while dir_path != tmp_root:
                 try:
                     os.rmdir(dir_path)
                     dir_path = os.path.dirname(dir_path)
@@ -144,7 +144,9 @@ _chime_rotation = []
 _last_interchime_folder = None
 
 
-def next_bar_chime(chosen_interchime_folder: str) -> AudioSegment:
+def next_bar_chime(
+    chosen_interchime_folder: str, tmp_root: str = "/tmp"
+) -> AudioSegment:
     global _chime_rotation, _last_interchime_folder
 
     if _last_interchime_folder != chosen_interchime_folder:
@@ -157,7 +159,7 @@ def next_bar_chime(chosen_interchime_folder: str) -> AudioSegment:
         if IS_PROD:
             # Download manifest from GCS
             local_manifest = os.path.join(
-                "/tmp", "chimes", chosen_interchime_folder, "manifest.json"
+                tmp_root, "chimes", chosen_interchime_folder, "manifest.json"
             )
             os.makedirs(os.path.dirname(local_manifest), exist_ok=True)
             fetch_from_gcs(f"gs://{GCP_AUDIO_BUCKET}/{manifest_rel}", local_manifest)
@@ -176,4 +178,4 @@ def next_bar_chime(chosen_interchime_folder: str) -> AudioSegment:
     # Pop the next chime filename and load
     filename = _chime_rotation.pop(0)
     rel_audio = f"chimes/{chosen_interchime_folder}/{filename}"
-    return load_and_clean_audio_asset(rel_audio)
+    return load_and_clean_audio_asset(rel_audio, tmp_root=tmp_root)
