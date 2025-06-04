@@ -209,7 +209,7 @@ useEffect(() => {
           flexDirection: 'column',
           fontFamily: "'Cutive Mono', monospace",
           position: 'relative',
-          overflow: 'hidden',
+          overflow: 'visible',
         }}
       >
       {loading && (
@@ -228,7 +228,7 @@ useEffect(() => {
         whiteSpace: 'pre-line',
       }}
     >
-          Mediation loading. This {'\n'} may take a moment...
+          Meditation loading. This {'\n'} may take a moment...
         </div>
       )}
 
