@@ -105,7 +105,7 @@ useEffect(() => {
             alignment_path: data.alignment_path,
           });
         if (insertError) console.error("Failed to persist storage_info:", insertError);
-        else console.log("storage_info inserted successfully for inputId:", inputId);
+        else console.log("Storage_info inserted successfully.");
       } else if (inputsError) {
         console.error("Error querying user_input before storage_info insert:", inputsError);
       } else {
@@ -232,7 +232,7 @@ useEffect(() => {
         whiteSpace: 'pre-line',
       }}
     >
-          Creating your{'\n'}meditation...
+          Creating your meditation. This may take {'\n'} a moment...
         </div>
       )}
 
@@ -273,7 +273,7 @@ useEffect(() => {
           <p className="quote-text">
             {showControls
               ? 'Wherever you are, totally be there.'
-              : 'You may start making yourself comfortable.'}
+              : 'Patience is a muscle, exercise it.'}
           </p>
         </div>
       )}

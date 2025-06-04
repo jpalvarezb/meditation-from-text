@@ -16,14 +16,11 @@ export default function JournalEntry() {
   console.log("handleNext triggered");
 
   sessionStorage.setItem("journal_entry", text);
-  console.log("Stored in sessionStorage:", text);
 
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   if (sessionError) console.error("Session fetch error:", sessionError);
-  console.log("Supabase session:", session);
 
   if (session) {
-    console.log("Upserting profile for:", session.user.id);
 
     const { error: upsertError } = await supabase
       .from('profiles')
@@ -43,8 +40,7 @@ export default function JournalEntry() {
     }
 
 
-    console.log("Inserting journal entry for:", session.user.id);
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('user_input')
       .insert({ user_id: session.user.id, entry: text });
 
@@ -58,7 +54,7 @@ export default function JournalEntry() {
         metadata: JSON.stringify({ action: 'insert user_input', entry: text }),
       });
     } else {
-      console.log("Insert succeeded:", data);
+      console.log("Insert succeeded");
     }
   } else {
     console.warn("No session found, skipping insert");

@@ -47,11 +47,6 @@ export default function PreparePage() {
       });
     } else {
       const recordId = inputs[0].id;
-      console.log("Updating record ID:", recordId);
-      console.log("With values:", {
-        minutes: parseInt(duration, 10),
-        meditation_type: type,
-      });
 
         const { error: updateError } = await supabase
           .from('user_input')
