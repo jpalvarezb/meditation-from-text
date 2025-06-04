@@ -233,7 +233,9 @@ async def generate_meditation_script(
 
     # 5) If in prod, upload & delete; otherwise return local path
     if IS_PROD:
-        gcs_uri = upload_to_gcs(local_path=script_output_path)
+        gcs_uri = upload_to_gcs(
+            local_path=script_output_path, dest_path=f"tts/{script_filename}"
+        )
         logger.info(f"Script uploaded to GCS: {gcs_uri}")
         try:
             os.remove(script_output_path)

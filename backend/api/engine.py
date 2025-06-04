@@ -49,7 +49,7 @@ async def meditation_engine(
             logger.error(f"Script generation failed: {e}")
             raise
 
-        script_local = resolve_asset(script_path)
+        script_local = resolve_asset(script_path, tmp_root)
 
         logger.info("Generating TTS audio...")
         tts_path = generate_tts(script_local, tmp_root=tmp_root)
@@ -60,12 +60,13 @@ async def meditation_engine(
         logger.info("Aligning audio and text...")
         alignment_path = align_audio_text(tts_local, script_local, tmp_root=tmp_root)
         logger.info(f"Alignment JSON saved at: {alignment_path}")
+        alignment_local = resolve_asset(alignment_path)
 
         logger.info("Sound engineering final meditation...")
         output_filename = f"final_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp3"
         final_mix_path = sound_engineer_pipeline(
-            tts_path=tts_path,
-            alignment_json_path=alignment_path,
+            tts_path=tts_local,
+            alignment_json_path=alignment_local,
             emotion_summary=emotion_summary,
             output_filename=output_filename,
             tmp_root=tmp_root,

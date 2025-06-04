@@ -56,7 +56,9 @@ def generate_tts(
 
     if IS_PROD:
         # Upload the local .wav to GCS, then delete the local copy
-        gcs_uri = upload_to_gcs(local_path=audio_output_path)
+        gcs_uri = upload_to_gcs(
+            local_path=audio_output_path, dest_path=f"tts/{audio_filename}"
+        )
         logger.info(f"TTS audio uploaded to GCS: {gcs_uri}")
         try:
             os.remove(audio_output_path)
@@ -101,7 +103,9 @@ def align_audio_text(
 
     if IS_PROD:
         # Upload the JSON to GCS, delete local copy
-        gcs_uri = upload_to_gcs(local_path=alignment_output_path)
+        gcs_uri = upload_to_gcs(
+            local_path=alignment_output_path, dest_path=f"tts/{alignment_filename}"
+        )
         logger.info(f"Alignment JSON uploaded to GCS: {gcs_uri}")
         try:
             os.remove(alignment_output_path)

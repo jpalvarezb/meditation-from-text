@@ -91,8 +91,9 @@ def resolve_asset(path: str, tmp_root: str = "/tmp") -> str:
 
     # Split off "gs://bucket/..."
     _, bucket_path = path.split("gs://", 1)
-    bucket_name, *blob_parts = bucket_path.split("/", 1)
-    blob_path = blob_parts[0] if blob_parts else ""
+    parts = bucket_path.split("/", 1)
+    bucket_name = parts[0]
+    blob_path = parts[1] if len(parts) == 2 else ""
 
     # Build a path under tmp_root that mirrors the blob's path
     local_dest = os.path.join(tmp_root, blob_path)

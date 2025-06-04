@@ -4,7 +4,7 @@ import math
 import numpy as np
 from pydub import AudioSegment
 from app.decision_maker import choose_assets
-from app.cloud_utils import resolve_asset, upload_to_gcs
+from app.cloud_utils import upload_to_gcs
 from config.trigger_words import TRIGGER_WORDS
 from app.audio_utils import (
     soften_voice,
@@ -68,9 +68,9 @@ def sound_engineer_pipeline(
     bg_loop = amb_rest.overlay(tone_rest, loop=True)
 
     # 4) Load & soften TTS
-    raw_tts = AudioSegment.from_file(resolve_asset(tts_path))
+    raw_tts = AudioSegment.from_file(tts_path)
     softened = soften_voice(raw_tts)
-    alignment_local = resolve_asset(alignment_json_path)
+    alignment_local = alignment_json_path
     with open(alignment_local) as f:
         fragments = json.load(f)["fragments"]
 
@@ -142,7 +142,9 @@ def sound_engineer_pipeline(
     out_path = os.path.join(tmp_root, output_filename)
     final_mix.export(out_path, format="mp3")
     if IS_PROD:
-        gcs_out = upload_to_gcs(local_path=out_path)
+        gcs_out = upload_to_gcs(
+            local_path=out_path, dest_path=f"output/{output_filename}"
+        )
         if gcs_out:
             out_path = gcs_out
     return out_path
