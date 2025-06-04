@@ -230,7 +230,7 @@ useEffect(() => {
         whiteSpace: 'pre-line',
       }}
     >
-          Creating your meditation. This may take {'\n'} a moment...
+          Mediation loading. This {'\n'} may take a moment...
         </div>
       )}
 
