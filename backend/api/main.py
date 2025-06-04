@@ -3,7 +3,7 @@ import tempfile
 import os
 from app.logger import logger
 from api.engine import meditation_engine
-from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi import FastAPI, HTTPException, Header
 from api.schemas import (
     MeditationRequest,
     MeditationResponse,
@@ -23,7 +23,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://minday.vercel.app/", "http://localhost:3000"],
+    allow_origins=["https://minday.vercel.app", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -32,8 +32,8 @@ app.add_middleware(
 
 @app.post("/meditate", response_model=MeditationResponse)
 async def meditate(
+    body: MeditationRequest,
     api_key: str = Header(None, alias="x-api-key"),
-    body: MeditationRequest = Depends(),
 ):
     if api_key != API_KEY:
         raise HTTPException(status_code=403, detail="Unauthorized")
