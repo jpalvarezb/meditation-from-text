@@ -88,7 +88,6 @@ useEffect(() => {
 
       const inputId = inputs?.[0]?.id;
       if (inputId) {
-        console.log("Attempting to insert into storage_info with user_input_id:", inputId);
         const { error: insertError } = await supabase
           .from('storage_info')
           .insert({

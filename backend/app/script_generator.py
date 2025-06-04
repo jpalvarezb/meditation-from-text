@@ -76,7 +76,8 @@ def generate_prompt(
     • Do not fabricate imagery (e.g., “storm,” “drowning”) unless the user used those exact words.
     • Avoid clinical language, hedging (“if you'd like”), or abstract affirmations.
     • Do not use ellipses (`...`) or em-dashes (`—`); only commas or line breaks.
-    • No scene headings, character names, dialogue, screenplay or story structure.
+    • No scene headings, character names, dialogue, screenplay, or story structure.
+    • Never include sound cues like (Gentle bell tone) in the narration.
 
     Your task:
     """
