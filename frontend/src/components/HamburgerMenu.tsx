@@ -3,9 +3,15 @@
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function HamburgerMenu() {
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    window.location.reload();
+  };
 
   return (
     <>
@@ -45,30 +51,30 @@ export default function HamburgerMenu() {
         }}
       >
         <ul style={{ listStyle: 'none', padding: 0, margin: 0, lineHeight: '4rem' }}>
-<li>
-  <Link
-    href="/"
-    style={{
-      color: '#000',
-      textDecoration: 'none',
-      fontSize: '1.4rem'    // ← bump this up as you like
-    }}
-  >
-    Home
-  </Link>
-</li>
-<li>
-  <Link
-    href="/feedback"
-    style={{
-      color: '#000',
-      textDecoration: 'none',
-      fontSize: '1.4rem'
-    }}
-  >
-    Feedback
-  </Link>
-</li>
+          <li>
+            <Link
+              href="/"
+              style={{
+                color: '#000',
+                textDecoration: 'none',
+                fontSize: '1.4rem'
+              }}
+            >
+              Home
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/feedback"
+              style={{
+                color: '#000',
+                textDecoration: 'none',
+                fontSize: '1.4rem'
+              }}
+            >
+              Feedback
+            </Link>
+          </li>
         </ul>
       </nav>
     </>

@@ -93,8 +93,10 @@ export default function Orb({
     if (!navigated.current) {
       navigated.current = true;
       if (reversing) {
+        console.log('Navigating to home');
         router.push('/');
       } else {
+        console.log('Navigating to journal');
         router.push('/journal');
       }
     }
@@ -132,7 +134,11 @@ const canvasStyle: CSSProperties = {
     <div
       onClick={() => {
         setTapped(true);
-        setTimeout(() => setTapped(false), 500);
+        if (triggerTransition) {
+          setTransitioning(true);
+        } else {
+          setTimeout(() => setTapped(false), 500);
+        }
       }}
       style={containerStyle}
     >

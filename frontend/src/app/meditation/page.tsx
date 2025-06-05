@@ -9,124 +9,125 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { supabase } from '@/lib/supabaseClient';
 const Orb = dynamic(() => import('@/components/Orb'), { ssr: false });
 
+const FETCH_TIMEOUT = 120000; // 30 seconds
+const MAX_RETRIES = 3;
+
+// Helper for fetch with timeout
+async function fetchWithTimeout(url: string, options: RequestInit, timeout: number) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return response;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
+}
 
 export default function LoadingPage() {
   const [loading, setLoading] = useState(true);
   const [playVisible, setPlayVisible] = useState(false);
-  const [distortion, setDistortion] = useState(0.3); // exaggerated during loading
+  const [distortion, setDistortion] = useState(0.3);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showControls, setShowControls] = useState(false);
   const [meditationEnded, setMeditationEnded] = useState(false);
   const [audioPath, setAudioPath] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const didRun = useRef(false);
   const retryingRef = useRef(false);  // retry lock
-useEffect(() => {
-  if (didRun.current) return;
-  didRun.current = true;
 
-  const fetchMeditation = async () => {
-  if (retryingRef.current) return;
-  retryingRef.current = true;
-
-  const journal_entry = sessionStorage.getItem('journal_entry') || '';
-  const duration_minutes = parseInt(sessionStorage.getItem('duration') || '5', 10);
-  const meditation_type = sessionStorage.getItem('meditation_type') || 'self-love';
-
-  try {
-
-    const response = await fetch('/api/proxy-meditate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ journal_entry, duration_minutes, meditation_type }),
-    });
-    console.log("response.ok:", response.ok);
-    console.log("status code:", response.status);
-    console.log("raw response:", await response.clone().text());
-
-    const data = await response.json();
-    console.log("parsed data:", data);
-
-
-    if (!data.final_signed_url && !data.final_audio_path) {
-      throw new Error("No valid audio URL returned");
-    }
-
-    if (!response.ok) throw new Error('Meditation generation failed');
-
-    if (data.status === 'error' && data.reason === 'threshold_unmet') {
-      const retry = confirm("Patience is a virtue. Please try again.");
-      if (retry) {
-        retryingRef.current = false;
-        return fetchMeditation();
+  // Hoist fetchMeditation to component scope
+  const fetchMeditation = async (attempt = 1) => {
+    setError(null);
+    const journal_entry = sessionStorage.getItem('journal_entry') || '';
+    const duration_minutes = parseInt(sessionStorage.getItem('duration') || '5', 10);
+    const meditation_type = sessionStorage.getItem('meditation_type') || 'self-love';
+    try {
+      const response = await fetchWithTimeout('/api/proxy-meditate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ journal_entry, duration_minutes, meditation_type }),
+      }, FETCH_TIMEOUT);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      if (!data.final_signed_url && !data.final_audio_path) {
+        throw new Error('No valid audio URL returned');
       }
-      return;
-    }
 
-    const cloudUrl = data.final_signed_url;
-    const localPath = data.final_audio_path;
+      if (data.status === 'error' && data.reason === 'threshold_unmet') {
+        const retry = confirm("Patience is a virtue. Please try again.");
+        if (retry) {
+          retryingRef.current = false;
+          return fetchMeditation();
+        }
+        return;
+      }
 
-    if (cloudUrl?.startsWith('https://')) {
-      setAudioPath(cloudUrl);
-    } else {
-      setAudioPath(`/output/${localPath?.split('/output/').pop()}`);
-    }
+      const cloudUrl = data.final_signed_url;
+      const localPath = data.final_audio_path;
 
-    // Persist storage info for this meditation session
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      // Find the matching user_input record
-      const { data: inputs, error: inputsError } = await supabase
-        .from('user_input')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .eq('entry', journal_entry)
-        .eq('minutes', duration_minutes)
-        .eq('meditation_type', meditation_type)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-
-      const inputId = inputs?.[0]?.id;
-      if (inputId) {
-        const { error: insertError } = await supabase
-          .from('storage_info')
-          .insert({
-            user_input_id: inputId,
-            final_signed_url: data.final_signed_url,
-            final_audio_path: data.final_audio_path,
-            emotion_summary: data.emotion_summary,
-            script_path: data.script_path,
-            tts_path: data.tts_path,
-            alignment_path: data.alignment_path,
-          });
-        if (insertError) console.error("Failed to persist storage_info:", insertError);
-        else console.log("Storage_info inserted successfully.");
-      } else if (inputsError) {
-        console.error("Error querying user_input before storage_info insert:", inputsError);
+      if (cloudUrl?.startsWith('https://')) {
+        setAudioPath(cloudUrl);
       } else {
-        console.warn("No matching user_input row found; skipping storage_info insert");
+        setAudioPath(`/output/${localPath?.split('/output/').pop()}`);
+      }
+
+      // Persist storage info for this meditation session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // Find the matching user_input record
+        const { data: inputs, error: inputsError } = await supabase
+          .from('user_input')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .eq('entry', journal_entry)
+          .eq('minutes', duration_minutes)
+          .eq('meditation_type', meditation_type)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        const inputId = inputs?.[0]?.id;
+        if (inputId) {
+          const { error: insertError } = await supabase
+            .from('storage_info')
+            .insert({
+              user_input_id: inputId,
+              final_signed_url: data.final_signed_url,
+              final_audio_path: data.final_audio_path,
+              emotion_summary: data.emotion_summary,
+              script_path: data.script_path,
+              tts_path: data.tts_path,
+              alignment_path: data.alignment_path,
+            });
+          if (insertError) console.error("Failed to persist storage_info:", insertError);
+          else console.log("Storage_info inserted successfully.");
+        } else if (inputsError) {
+          console.error("Error querying user_input before storage_info insert:", inputsError);
+        } else {
+          console.warn("No matching user_input row found; skipping storage_info insert");
+        }
+      }
+
+    } catch (err) {
+      if (attempt < MAX_RETRIES) {
+        setRetryCount(attempt);
+        setTimeout(() => fetchMeditation(attempt + 1), 1000 * attempt); // exponential backoff
+      } else {
+        setError('Failed to load meditation. Please try again.');
+        setRetryCount(0);
       }
     }
+  };
 
-  } catch (err) {
-    console.error('Failed to fetch meditation:', err);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      await supabase.from('bug_reports').insert({
-        user_id: session.user.id,
-        message: (err as Error)?.message ?? 'Meditation fetch error',
-        stacktrace: (err as Error)?.stack ?? null,
-        page: 'meditation',
-        metadata: JSON.stringify({ journal_entry, duration_minutes, meditation_type }),
-      });
-    }
-  } finally {
-    retryingRef.current = false;
-  }
-};
+  useEffect(() => {
+    if (didRun.current) return;
+    didRun.current = true;
 
-  fetchMeditation();
-}, []);
+    fetchMeditation();
+  }, []);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -380,6 +381,14 @@ useEffect(() => {
             Restart
           </button>
         </>
+      )}
+      {error && (
+        <div style={{ color: '#FF4444', textAlign: 'center', margin: '1rem' }}>
+          {error}
+          <button onClick={() => fetchMeditation()} style={{ marginLeft: 12, padding: '0.5rem 1rem', borderRadius: 8, border: 'none', background: '#3A53F7', color: '#fff', cursor: 'pointer' }}>
+            Retry
+          </button>
+        </div>
       )}
       <style jsx>{`
         .quote-container {

@@ -7,7 +7,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [resendVisible, setResendVisible] = useState(false);
-  const [resendCountdown, setResendCountdown] = useState(15);
+  const [resendCountdown, setResendCountdown] = useState(10);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -27,31 +28,39 @@ export default function LoginPage() {
   }, [sent, resendVisible]);
 
   const handleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOtp({ email });
-    if (!error) {
-      setSent(true);
-      setResendVisible(false);
-      setResendCountdown(15);
-    } else {
-  console.error('Login error:', error);
+    try {
+      setError(null);
+      const { error } = await supabase.auth.signInWithOtp({ email });
+      if (!error) {
+        setSent(true);
+        setResendVisible(false);
+        setResendCountdown(10);
+      } else {
+        console.error('Login error:', error);
+        if (error.message.includes('10 seconds')) {
+          setError('Please wait 10 seconds before requesting another link');
+        } else {
+          setError('An error occurred. Please try again.');
+        }
 
-  const { data: { session } } = await supabase.auth.getSession();
-  const user_id = session?.user?.id ?? null;
+        const { data: { session } } = await supabase.auth.getSession();
+        const user_id = session?.user?.id ?? null;
 
-  await supabase.from('bug_reports').insert({
-    user_id,
-    message: typeof error === 'object' && error?.message ? error.message : String(error),
-    stacktrace: typeof error === 'object' && 'stack' in error ? error.stack ?? null : null,
-    page: 'login',
-    metadata: JSON.stringify({ email }),
-  });
-}
-
-};
-
+        await supabase.from('bug_reports').insert({
+          user_id,
+          message: typeof error === 'object' && error?.message ? error.message : String(error),
+          stacktrace: typeof error === 'object' && 'stack' in error ? error.stack ?? null : null,
+          page: 'login',
+          metadata: JSON.stringify({ email }),
+        });
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      setError('An unexpected error occurred. Please try again.');
+    }
+  };
 
   return (
-
     <main
       style={{
         backgroundColor: '#F9E66B',
@@ -140,6 +149,16 @@ export default function LoginPage() {
           >
             Get link
           </button>
+          {error && (
+            <p style={{
+              color: '#FF4444',
+              fontSize: '0.9rem',
+              textAlign: 'center',
+              marginTop: '-2rem'
+            }}>
+              {error}
+            </p>
+          )}
         </>
       )}
     </main>
