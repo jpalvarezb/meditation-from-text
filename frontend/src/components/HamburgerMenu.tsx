@@ -3,15 +3,10 @@
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabaseClient';
 
 export default function HamburgerMenu() {
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.reload();
-  };
 
   return (
     <>
