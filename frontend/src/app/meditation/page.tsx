@@ -35,7 +35,6 @@ export default function LoadingPage() {
   const [meditationEnded, setMeditationEnded] = useState(false);
   const [audioPath, setAudioPath] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
   const didRun = useRef(false);
   const retryingRef = useRef(false);  // retry lock
 
@@ -111,17 +110,16 @@ export default function LoadingPage() {
         }
       }
 
-    } catch (err) {
+    } catch {
       if (attempt < MAX_RETRIES) {
-        setRetryCount(attempt);
         setTimeout(() => fetchMeditation(attempt + 1), 1000 * attempt); // exponential backoff
       } else {
         setError('Failed to load meditation. Please try again.');
-        setRetryCount(0);
       }
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (didRun.current) return;
     didRun.current = true;
