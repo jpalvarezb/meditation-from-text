@@ -43,7 +43,6 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
           .select('id')
           .eq('id', session.user.id)
           .single();
-        console.log('Profile check:', profile ? 'Found' : 'Not found', 'Error:', profileError);
         if (profileError || !profile) {
           console.log('Profile verification failed, redirecting to login');
           router.replace('/login');

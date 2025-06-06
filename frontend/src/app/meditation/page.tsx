@@ -119,13 +119,12 @@ export default function LoadingPage() {
     }
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (didRun.current) return;
     didRun.current = true;
 
     fetchMeditation();
-  }, []);
+  });
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
