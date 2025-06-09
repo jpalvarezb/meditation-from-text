@@ -7,7 +7,6 @@ from app.sound_engineer import sound_engineer_pipeline
 from app.cloud_utils import (
     resolve_asset,
     generate_signed_url,
-    clean_up_tmp_folder,
 )
 
 
@@ -77,7 +76,6 @@ async def meditation_engine(
             logger.info(f"Final mix saved at: {final_mix_path}")
         logger.info("Medition generation pipeline finished successfully.")
         # Clean Up local files
-        clean_up_tmp_folder(tmp_root)
         return {
             "final_signed_url": final_signed_url
             if final_signed_url

@@ -9,7 +9,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { supabase } from '@/lib/supabaseClient';
 const Orb = dynamic(() => import('@/components/Orb'), { ssr: false });
 
-const FETCH_TIMEOUT = 120000; // 30 seconds
+const FETCH_TIMEOUT = 120000;
 const MAX_RETRIES = 3;
 
 // Helper for fetch with timeout

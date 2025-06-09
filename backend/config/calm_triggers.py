@@ -28,5 +28,4 @@ CALM_TRIGGERS = {
     "expand",
 }
 
-# These trigger words are used in post-processing the script to SSML.
-# They are used to identify where to add pauses in the TTS.
+# Used to identify where to add pauses in the TTS.

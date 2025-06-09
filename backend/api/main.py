@@ -15,6 +15,7 @@ from app.cache_utils import (
     save_to_cache,
     load_from_cache,
 )
+from app.cloud_utils import clean_up_tmp_folder
 
 from fastapi.middleware.cors import CORSMiddleware
 from config.params import API_KEY
@@ -76,6 +77,7 @@ async def meditate(
         "alignment_path": result["alignment_path"],
     }
     save_to_cache(cache_key, to_cache)
+    clean_up_tmp_folder(tmp_root)
     return result
 
 
