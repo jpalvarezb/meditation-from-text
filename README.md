@@ -1,46 +1,53 @@
 # Minday
 
-*AI-Powered Personalized Meditation from Your Daily Reflections*
+*AI-Powered Personalized Meditation Generation*
 
-Minday transforms your personal journal entries into custom-guided meditations tailored to your emotional state and meditation preferences. Using advanced emotion analysis, AI-generated scripts, and sophisticated audio engineering, Minday creates deeply personal meditation experiences that resonate with your daily life.
+**Note: This project is for exploratory, educational, and innovative purposes only, not for monetary gain. The website is accessible for demonstration but not fully functional.**
 
-## Key Features
+Minday is a technical exploration that transforms journal entries into personalized meditation sessions through advanced AI and audio processing. The system combines emotion analysis, generative AI, and sophisticated audio engineering to create custom meditation experiences.
 
-- **Emotion-Aware Analysis**: Advanced NLP models analyze your journal entries to understand your emotional state
-- **AI Script Generation**: Google Gemini creates personalized meditation scripts based on your emotions and preferences  
-- **Professional Text-to-Speech**: OpenAI's premium TTS generates soothing guided audio
-- **Adaptive Sound Design**: Dynamic background music and soundscapes that respond to your emotional profile
-- **Flexible Duration**: Choose from 1, 3, 5, or 7-minute sessions
-- **Meditation Types**: Morning, evening, sleep, stress release, conflict resolution, self-love, and focus reset
-- **Privacy-First**: Your personal reflections stay secure with you
-- **Responsive Design**: Beautiful, minimalist interface that works on all devices
+## Technical Features
 
-## Architecture
+- **Emotion Classification**: ONNX-optimized transformer model for real-time emotional state analysis
+- **Generative AI**: Google Gemini 2.0 Flash for context-aware meditation script generation
+- **Neural TTS**: OpenAI's GPT-4-Mini-TTS with custom voice instructions
+- **Audio Processing**: PyDub and Aeneas for precise text-audio alignment and mixing
+- **Adaptive Sound Design**: Dynamic background composition based on emotional profiles
+- **Multi-duration Support**: 1-7 minute sessions with word count optimization
+- **User Authentication**: Supabase Auth with Row Level Security
+- **Data Persistence**: PostgreSQL via Supabase for user sessions and feedback
 
-Minday is a full-stack application built with modern technologies:
+## System Architecture
 
-### Frontend (Next.js 15)
-- **Framework**: Next.js 15 with App Router
-- **Authentication**: Supabase Auth
-- **UI**: Custom React components with Three.js animations
-- **Styling**: Styled JSX with responsive design
-- **State Management**: React hooks and session storage
+### Frontend Stack
+- **Next.js 15**: App Router, TypeScript, Styled JSX
+- **Authentication**: Supabase Auth with protected routes
+- **Database**: Supabase PostgreSQL with RLS
+- **UI Libraries**: Three.js for WebGL animations, Lucide React icons
+- **State Management**: React hooks, session storage
+- **Deployment**: Vercel with automatic branch deployments
 
-### Backend (FastAPI)
-- **API Framework**: FastAPI with automatic API documentation
-- **AI Integration**: Google Gemini 2.0 for script generation
-- **TTS**: OpenAI GPT-4-Mini-TTS for audio synthesis
-- **Audio Processing**: PyDub with Aeneas for text-audio alignment
-- **Emotion Analysis**: Optimized ONNX model for real-time emotion classification
-- **Cloud Storage**: Google Cloud Storage for production assets
-- **Caching**: Intelligent caching system to optimize response times
+### Backend Stack
+- **FastAPI**: Async API with automatic OpenAPI documentation
+- **AI Services**: Google Gemini 2.0 Flash, OpenAI GPT-4-Mini-TTS
+- **Audio Processing**: 
+  - PyDub for audio manipulation
+  - Aeneas for forced alignment
+  - FFmpeg for audio format conversion
+- **ML Pipeline**: HuggingFace transformers with ONNX optimization
+- **Storage**: Google Cloud Storage with signed URLs
+- **Caching**: Request-based caching for meditation assets
+- **Deployment**: Google Cloud Run with Docker containers
 
-### Audio Pipeline
-1. **Emotion Scoring**: HuggingFace transformer model analyzes journal text
-2. **Script Generation**: AI creates personalized meditation narratives
-3. **TTS Generation**: Premium voice synthesis with custom pacing
-4. **Audio Alignment**: Precise text-to-audio synchronization
-5. **Sound Engineering**: Dynamic mixing with ambient soundscapes and chimes
+### Processing Pipeline
+1. **Text Preprocessing**: Normalize and clean journal input
+2. **Emotion Classification**: Multi-label classification using fine-tuned BERT
+3. **Prompt Engineering**: Context-aware prompt construction for Gemini
+4. **Script Generation**: AI-generated meditation with word count validation
+5. **TTS Synthesis**: OpenAI TTS with custom voice parameters
+6. **Audio Alignment**: Precise phoneme-level text-audio mapping
+7. **Sound Engineering**: Dynamic mixing with emotion-responsive soundscapes
+8. **Asset Management**: Cloud storage with CDN delivery
 
 ## Project Structure
 
@@ -197,13 +204,14 @@ meditation-from-text/
 - `self-love` - Nurturing self-compassion
 - `focus reset` - Mental clarity and concentration
 
-## Usage
+## Technical Workflow
 
-1. **Journal Entry**: Write about your current thoughts, feelings, or experiences
-2. **Customize Session**: Choose duration (1-7 minutes) and meditation type
-3. **AI Generation**: The system analyzes your emotions and creates a personalized script
-4. **Audio Experience**: Listen to your custom meditation with adaptive soundscapes
-5. **Feedback**: Share your experience to help improve future sessions
+1. **User Input**: Journal text processed through emotion classification model
+2. **Configuration**: Duration and meditation type selection
+3. **AI Processing**: Gemini generates personalized script with retry mechanisms
+4. **Audio Synthesis**: TTS generation with custom voice parameters
+5. **Post-Processing**: Audio alignment and dynamic sound mixing
+6. **Delivery**: Signed URL generation for secure audio streaming
 
 ## Development
 
@@ -252,34 +260,30 @@ docker-compose up --build
 - **Frontend**: Vercel, Netlify, or static hosting
 - **Database**: Supabase (managed) or self-hosted PostgreSQL
 
-## Contributing
+## Project Status
 
-We welcome contributions! Please follow these steps:
+This is an educational and exploratory project demonstrating advanced AI audio processing capabilities. The system is not intended for commercial use.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Follow existing code style and conventions
-- Write tests for new features
-- Update documentation as needed
-- Ensure all tests pass before submitting
+### Current Implementation
+- ✅ Complete emotion classification pipeline
+- ✅ Generative AI script creation with validation
+- ✅ Neural TTS with custom voice synthesis
+- ✅ Advanced audio processing and mixing
+- ✅ User authentication and data persistence
+- ⚠️ Limited production functionality due to API costs
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+## Technology Stack
 
-- **OpenAI** for advanced text-to-speech capabilities
-- **Google** for Gemini AI and cloud services
-- **HuggingFace** for emotion classification models
-- **Aeneas** for precise audio-text alignment
-- **Supabase** for authentication and database services
+- **OpenAI** - GPT-4-Mini-TTS for neural voice synthesis
+- **Google** - Gemini 2.0 Flash for generative AI
+- **HuggingFace** - Transformer models and ONNX optimization
+- **Supabase** - PostgreSQL database, authentication, and RLS
+- **Google Cloud** - Storage, compute, and deployment infrastructure
+- **Aeneas** - Forced alignment for precise text-audio mapping
 
 ## Support
 
