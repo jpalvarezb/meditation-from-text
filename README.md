@@ -2,7 +2,7 @@
 
 *AI-Powered Personalized Meditation Generation*
 
-**Note: This project is for exploratory, educational, and innovative purposes only, not for monetary gain. The website is accessible for demonstration but not fully functional.**
+**Note: This project is for exploratory, educational, and innovative purposes only, not for monetary gain. The website is accessible for demonstration but production has been halted.**
 
 Minday is a technical exploration that transforms journal entries into personalized meditation sessions through advanced AI and audio processing. The system combines emotion analysis, generative AI, and sophisticated audio engineering to create custom meditation experiences.
 
