@@ -8,7 +8,8 @@ __pycache__/
 
 # Miscelleanous
 backend/notebooks/
-.DS_Store (macOS)
+.DS_Store
+**/.DS_Store
 backend/secrets/
 backend/assets/
 
@@ -147,8 +148,11 @@ backend/venv/
 
 # Environment files
 .env
+.env.*
 backend/.env
+backend/.env.*
 **/.env
+**/.env.*
 
 # Spyder project settings
 .spyderproject
