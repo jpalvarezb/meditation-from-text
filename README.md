@@ -89,7 +89,7 @@ meditation-from-text/
 
 ### Backend Setup
 
-1. **Environment Setup**:
+1. **Environment Setup** (local dev):
    ```bash
    # Install Python 3.11
    pyenv install 3.11.9
@@ -98,16 +98,20 @@ meditation-from-text/
    # Create virtual environment
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
+   
+   cd backend
+   # Torch CPU wheels often need the official index
+   pip install -r requirements.txt -f https://download.pytorch.org/whl/torch_stable.html
    ```
 
-2. **Install Dependencies**:
+   Or run the full pipeline via Docker (recommended for aeneas):
    ```bash
    cd backend
-   pip install -r requirements.txt
+   docker compose up --build
    ```
 
-3. **Environment Variables**:
-   Create `.env` in the backend directory:
+2. **Environment Variables**:
+   Copy `backend/.env.example` to `backend/.env` and set values. Key vars:
    ```env
    # AI Services
    OPENAI_API_KEY=your_openai_api_key
@@ -117,14 +121,14 @@ meditation-from-text/
    BACKEND_API_KEY=your_secure_api_key
    
    # Google Cloud (for production)
-   GOOGLE_CLOUD_PROJECT=your_project_id
-   GCS_BUCKET=your_storage_bucket
+   GOOGLE_APPLICATION_CREDENTIALS=... # JSON or Workload Identity
+   AUDIO_BUCKET=your_storage_bucket
    
    # Environment
-   IS_PROD=False  # Set to True for production
+   ENV=dev  # set to prod in production
    ```
 
-4. **Start Development Server**:
+3. **Start Development Server (local)**:
    ```bash
    uvicorn api.main:app --reload --port 8000
    ```
@@ -138,7 +142,7 @@ meditation-from-text/
    ```
 
 2. **Environment Variables**:
-   Create `.env.local`:
+   Copy `frontend/.env.local.example` to `frontend/.env.local` and set:
    ```env
    NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
    BACKEND_API_KEY=your_secure_api_key
@@ -213,6 +217,8 @@ meditation-from-text/
 5. **Post-Processing**: Audio alignment and dynamic sound mixing
 6. **Delivery**: Signed URL generation for secure audio streaming
 
+Note on development: in dev (ENV!=prod) the final mix is written to `backend/assets/audio/output/` and served by the frontend via `/output/<file>.mp3`. In production, artifacts are stored in GCS and served via signed URLs.
+
 ## Development
 
 ### Running Tests
@@ -239,16 +245,16 @@ npm run lint
 
 ### Docker Development
 ```bash
-# Build and run with Docker Compose
+# Build and run with Docker Compose v2
 cd backend
-docker-compose up --build
+docker compose up --build
 ```
 
 ## Deployment
 
 ### Production Considerations
 
-- **Environment Variables**: Set `IS_PROD=True` for cloud storage
+- **Environment Variables**: Set `ENV=prod` to enable production behavior (signed URLs, temp paths)
 - **Google Cloud Storage**: Required for production audio file storage
 - **Caching**: Redis recommended for production caching
 - **Monitoring**: Implement logging and error tracking
@@ -285,9 +291,29 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Google Cloud** - Storage, compute, and deployment infrastructure
 - **Aeneas** - Forced alignment for precise text-audio mapping
 
+## Troubleshooting
+
+- aeneas not installed: Use Docker (`docker compose up`) or install `aeneas==1.7.3.0`. The backend raises a clear error if it’s missing.
+- Emotion model missing: If `backend/emotion_model/` isn’t present, the app falls back to a public HuggingFace model.
+- Final mix not found in dev: Ensure the backend writes to `backend/assets/audio/output/` and the frontend serves `/output/<filename>.mp3`.
+- Torch wheel install: On some platforms, add `-f https://download.pytorch.org/whl/torch_stable.html` when installing requirements.
+
+## Security & Privacy
+
+- Prototype only; do not enter sensitive personal data.
+- No secrets are committed. Use `.env` files or Docker secrets.
+- In production, prefer GCP Workload Identity (avoid embedding service account JSON).
+
+## Roadmap / Next Steps
+
+- Structured logging + request IDs, metrics, and alerting
+- Background job/queue for long-running generations
+- Cost controls and rate limiting per user
+- E2E tests and golden-audio regression checks
+
 ## Support
 
-For support, please open an issue on GitHub or contact the development team.
+For support, please open an issue on GitHub.
 
 ---
 

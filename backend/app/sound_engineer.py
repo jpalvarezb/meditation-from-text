@@ -17,7 +17,7 @@ from app.audio_utils import (
     build_outro_segment,
     load_and_clean_audio_asset,
 )
-from config.params import IS_PROD
+from config.params import IS_PROD, OUTPUT_DIR
 
 
 def sound_engineer_pipeline(
@@ -139,8 +139,14 @@ def sound_engineer_pipeline(
     final_mix = (base_core + final_chime).fade_out(len(end_chime))
 
     # 10) Export
-    out_path = os.path.join(tmp_root, output_filename)
+    if IS_PROD:
+        out_path = os.path.join(tmp_root, output_filename)
+    else:
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        out_path = os.path.join(OUTPUT_DIR, output_filename)
+
     final_mix.export(out_path, format="mp3")
+
     if IS_PROD:
         gcs_out = upload_to_gcs(
             local_path=out_path, dest_path=f"output/{output_filename}"

@@ -1,30 +1,8 @@
-import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(req: NextRequest) {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => []
-      } // required, even if unused
-    }
-  );
-
-  const { searchParams } = new URL(req.url);
-  const email = searchParams.get('email');
-  if (!email) return NextResponse.json({ exists: false });
-
-  const { data, error } = await supabase.auth.admin.listUsers();
-
-  if (error) {
-    console.error('Check-user error', error);
-    return NextResponse.json({ exists: false });
-  }
-
-  const exists =
-    data?.users?.some((u) => u.email === email && u.confirmed_at !== null) ?? false;
-
-  return NextResponse.json({ exists });
+// This endpoint previously relied on Supabase Admin (service role).
+// To avoid leaking service keys and failures in public demos, we return a safe default.
+// If you need this functionality, implement it on a secure server with a service role key.
+export async function GET(_req: NextRequest) {
+  return NextResponse.json({ exists: false });
 }

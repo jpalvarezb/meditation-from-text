@@ -53,4 +53,5 @@ AWS_REGION = "us-east-1"
 OPENAI_API_KEY = get_secret("OPENAI_API_KEY")
 
 ## Backend
-API_KEY = os.getenv("API_KEY")
+# Accept either BACKEND_API_KEY (preferred) or API_KEY
+API_KEY = os.getenv("BACKEND_API_KEY") or os.getenv("API_KEY")

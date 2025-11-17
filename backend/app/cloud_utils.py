@@ -118,7 +118,8 @@ def generate_signed_url(gcs_uri: str, expiration_minutes: int = 60) -> str:
     if not gcs_uri.startswith("gs://"):
         return gcs_uri
 
-    if os.getenv("ENV") != "prod":
+    from config.params import IS_PROD
+    if not IS_PROD:
         return gcs_uri
 
     parts = gcs_uri[5:].split("/", 1)

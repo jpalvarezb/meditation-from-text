@@ -1,11 +1,17 @@
 import os
 from datetime import datetime
 from openai import OpenAI
-from aeneas.task import Task
-from aeneas.executetask import ExecuteTask
 from app.logger import logger
 from app.cloud_utils import upload_to_gcs
 from config.params import OPENAI_API_KEY, IS_PROD
+
+# Optional aeneas import for local dev convenience
+try:
+    from aeneas.task import Task
+    from aeneas.executetask import ExecuteTask
+    AENEAS_AVAILABLE = True
+except Exception:
+    AENEAS_AVAILABLE = False
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -80,7 +86,13 @@ def align_audio_text(
     Run Aeneas alignment between a local audio file and a local text file.
     Creates a JSON alignment in tmp_root. In production, uploads to GCS & deletes local.
     Returns either the local JSON path (dev) or the GCS URI (prod).
+    If aeneas is not available locally, raise a clear error recommending Docker.
     """
+    if not AENEAS_AVAILABLE:
+        raise RuntimeError(
+            "Aeneas is not installed in this environment. Run the backend via Docker (compose) or install aeneas as documented."
+        )
+
     # --- Ensure tmp_root exists ---
     os.makedirs(tmp_root, exist_ok=True)
 

@@ -40,7 +40,7 @@ export default function LoginPage() {
         if (error.message.includes('10 seconds')) {
           setError('Please wait 10 seconds before requesting another link');
         } else {
-          setError('Production halted due to low volume');
+          setError('Production halted.');
         }
 
         const { data: { session } } = await supabase.auth.getSession();
